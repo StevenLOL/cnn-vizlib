@@ -6,7 +6,7 @@ import lasagne.layers
 
 class TestMaxSwitch2DLayer():
 
-    def test_something(self):
+    def test_switches(self):
 
         X = np.array([[1, 2, 3, 4],
                       [5, 6, 5, 1],
@@ -21,7 +21,6 @@ class TestMaxSwitch2DLayer():
         X_var = T.tensor4('X')
         input_layer = lasagne.layers.InputLayer(X.shape, X_var)
         layer = deconvolution.MaxSwitch2DLayer(input_layer, (2, 2))
-        #layer = lasagne.layers.MaxPool2DLayer(input_layer, (2, 2))
 
         expr = layer.get_output_for(X_var)
         f = theano.function([X_var], expr, allow_input_downcast=True)
