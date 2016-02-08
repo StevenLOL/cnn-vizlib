@@ -12,7 +12,7 @@ def maximize_score(
     max_norm=None,
 ):
     X = theano.shared(value=X_init, name='X', borrow=False)
-    expressions = expression_to_maximize(X, output_layer, ignore_nonlinearity)
+    expressions = scores(X, output_layer, ignore_nonlinearity)
     if output_node:
         expressions = expressions[output_node:output_node+1]
 
@@ -52,12 +52,7 @@ def maximize_score(
         histories.append(history)
     return results
 
-def expression_to_maximize(X, output_layer, ignore_nonlinearity=False):
-    '''
-    output_layer:        lasagne.Layer
-    ignore_nonlinearity: bool
-    output_node:         uint
-    '''
+def scores(X, output_layer, ignore_nonlinearity=False):
     if ignore_nonlinearity:
         original_nonlinearity = output_layer.nonlinearity
         output_layer.nonlinearity = lasagne.nonlinearities.identity

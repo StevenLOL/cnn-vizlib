@@ -16,7 +16,7 @@ class TestExpressionToMaximize():
         num_units = 5
         output_layer = lasagne.layers.DenseLayer(input_layer, num_units=num_units)
 
-        outputs = vizlib.activation_maximization.maximize.expression_to_maximize(
+        outputs = vizlib.activation_maximization.scores(
             X_var, output_layer, ignore_nonlinearity=True)
         assert num_units == len(outputs)
 
@@ -33,7 +33,7 @@ class TestExpressionToMaximize():
         num_filters = 12
         output_layer = lasagne.layers.Conv2DLayer(input_layer, num_filters, (3, 3))
 
-        outputs = vizlib.activation_maximization.maximize.expression_to_maximize(
+        outputs = vizlib.activation_maximization.scores(
             X_var, output_layer, ignore_nonlinearity=True)
         assert num_filters == len(outputs)
 
@@ -57,7 +57,7 @@ class TestMaximizeScores():
 
         # Test our function by making sure that the activation expression
         # has a lower score initially than it has at the end
-        expressions = vizlib.activation_maximization.maximize.expression_to_maximize(
+        expressions = vizlib.activation_maximization.scores(
             X, dense_layer, ignore_nonlinearity=True)
 
         f = theano.function([], expressions)
