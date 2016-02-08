@@ -9,6 +9,7 @@ def maximize_score(
     output_node=None,
     learning_rate=0.01,
     momentum=0.9,
+    max_norm=None,
 ):
     X = theano.shared(value=X_init, name='X', borrow=False)
     expressions = expression_to_maximize(X, output_layer, ignore_nonlinearity)
@@ -20,7 +21,6 @@ def maximize_score(
     for expr in expressions:
         X.set_value(X_init)
 
-        # TODO: add regularization
         cost = -expr
 
         updates = lasagne.updates.nesterov_momentum(
@@ -28,6 +28,10 @@ def maximize_score(
             learning_rate=learning_rate,
             momentum=momentum
         )
+
+        if max_norm:
+            updates[X] = lasagne.updates.norm_constraint(updates[X], max_norm)
+
         update_iter = theano.function(
             [], cost,
             updates=updates
@@ -35,13 +39,13 @@ def maximize_score(
 
         current_value = best_value = float(update_iter())
         history = [current_value]
-        best_X = X.get_value()
+        best_X = X.get_value(borrow=False)
 
         for i in range(number_of_iterations):
             current_value = float(update_iter())
             history.append(current_value)
             if current_value < best_value:
-                best_X = X.get_value()
+                best_X = X.get_value(borrow=False)
                 best_value = current_value
 
         results.append((best_value, best_X))

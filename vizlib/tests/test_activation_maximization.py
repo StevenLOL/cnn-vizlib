@@ -53,6 +53,7 @@ class TestMaximizeScores():
         conv_layer = lasagne.layers.Conv2DLayer(input_layer, 7, (3, 3))
         dense_layer = lasagne.layers.DenseLayer(conv_layer, 3)
         n_iterations = 100
+        max_norm = lasagne.utils.compute_norms(X_init).max()
 
         # Test our function by making sure that the activation expression
         # has a lower score initially than it has at the end
@@ -63,9 +64,13 @@ class TestMaximizeScores():
         initial_scores = f()
 
         scores_and_maximizers = vizlib.activation_maximization.maximize_score(
-            dense_layer, X_init, n_iterations)
+            dense_layer, X_init, n_iterations, max_norm=max_norm)
 
         np.testing.assert_array_less(
             initial_scores,
             -np.array([s for s, _ in scores_and_maximizers]),
         )
+
+        for _, m in scores_and_maximizers:
+            assert np.isclose(lasagne.utils.compute_norms(m).max(),
+                              max_norm)
