@@ -1,6 +1,54 @@
 import lasagne
+import theano
 
-def expression_to_maximize(output_layer, ignore_nonlinearity=False, output_node=None):
+def maximize_score(
+    output_layer,
+    X_init,
+    number_of_iterations,
+    ignore_nonlinearity=False,
+    output_node=None,
+    learning_rate=0.01,
+    momentum=0.9,
+):
+    X = theano.shared(value=X_init, name='X', borrow=False)
+    expressions = expression_to_maximize(X, output_layer, ignore_nonlinearity)
+    if output_node:
+        expressions = expressions[output_node:output_node+1]
+
+    results = []
+    histories = []
+    for expr in expressions:
+        X.set_value(X_init)
+
+        # TODO: add regularization
+        cost = -expr
+
+        updates = lasagne.updates.nesterov_momentum(
+            cost, [X],
+            learning_rate=learning_rate,
+            momentum=momentum
+        )
+        update_iter = theano.function(
+            [], cost,
+            updates=updates
+        )
+
+        current_value = best_value = float(update_iter())
+        history = [current_value]
+        best_X = X.get_value()
+
+        for i in range(number_of_iterations):
+            current_value = float(update_iter())
+            history.append(current_value)
+            if current_value < best_value:
+                best_X = X.get_value()
+                best_value = current_value
+
+        results.append((best_value, best_X))
+        histories.append(history)
+    return results
+
+def expression_to_maximize(X, output_layer, ignore_nonlinearity=False):
     '''
     output_layer:        lasagne.Layer
     ignore_nonlinearity: bool
@@ -10,17 +58,15 @@ def expression_to_maximize(output_layer, ignore_nonlinearity=False, output_node=
         original_nonlinearity = output_layer.nonlinearity
         output_layer.nonlinearity = lasagne.nonlinearities.identity
 
-    output = get_output_expression(output_layer)
+    output = get_output_expression(X, output_layer)
 
     if ignore_nonlinearity:
         output_layer.nonlinearity = original_nonlinearity
 
-    if output_node:
-        return output[output_node]
     return output
 
-def get_output_expression(output_layer):
-    output_expr = get_output_expressions(output_layer)[-1]
+def get_output_expression(X, output_layer):
+    output_expr = get_output_expressions(X, output_layer)[-1]
     # This output is always of the form (n_batch, ...)
     # Since optimizing for a batch larger than 1 is hard to define,
     # we won't do that here. And simply return the first element in the batch.
@@ -40,8 +86,8 @@ def get_output_expression_conv_layer(output_expr):
     # let's just sum the output over the right axis.
     return output_expr.sum(axis=(-2, -1))
 
-def get_output_expressions(output_layer):
-    '''Return a list of the output expressions wrt the input variable
+def get_output_expressions(X, output_layer):
+    '''Return a list of the output expressions wrt the input variable X
     for all layers that precide the output_layer and the output_layer itself.
 
     i.e., if output_layer has 9 layers before it,
@@ -58,7 +104,8 @@ def get_output_expressions(output_layer):
         first_layer = first_layer.input_layer
         layers.append(first_layer)
     # the pop removes the first_layer
-    output_expr = layers.pop().input_var
+    layers.pop()
+    output_expr = X
     layers.reverse()
     expressions = [output_expr]
 

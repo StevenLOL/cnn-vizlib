@@ -1,1 +1,1 @@
-from maximize import expression_to_maximize
+from maximize import maximize_score
