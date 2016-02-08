@@ -168,12 +168,12 @@ class DownsampleFactorMaxSwitches(Op):
         else:
             y = x
 
-        for n in xrange(x.shape[0]):
-            for k in xrange(x.shape[1]):
-                for r in xrange(pr):
+        for n in range(x.shape[0]):
+            for k in range(x.shape[1]):
+                for r in range(pr):
                     row_st = r * st0
                     row_end = min(row_st + ds0, img_rows)
-                    for c in xrange(pc):
+                    for c in range(pc):
                         col_st = c * st1
                         col_end = min(col_st + ds1, img_cols)
                         zz[n, k, r, c] = np.argmax(
@@ -350,7 +350,6 @@ class DownsampleFactorMaxSwitches(Op):
             }
         }
         """
-        print ccode % locals()
         return ccode % locals()
 
     def c_code_cache_version(self):

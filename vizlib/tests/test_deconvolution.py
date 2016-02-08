@@ -28,6 +28,40 @@ class TestMaxSwitch2DLayer():
         switches = f(X)
         np.testing.assert_array_equal(expected_switches, switches)
 
+class TestMaxUnpool2DLayer():
+
+    def test_maxunpool(self):
+
+        theano.config.cxx=''
+        X = np.array([[1, 2, 3, 4],
+                      [5, 6, 5, 1],
+                      [9, 0, 1, 9],
+                      [3, 4, 5, 6]])
+        X = X.reshape((1, 1, ) + X.shape)
+        X_var = T.tensor4('X')
+        input_layer = lasagne.layers.InputLayer(X.shape, X_var)
+        pool_layer = lasagne.layers.MaxPool2DLayer(
+            input_layer,
+            (2, 2),
+        )
+        switch_layer = deconvolution.MaxSwitch2DLayer(
+            input_layer,
+            (2, 2),
+        )
+        unpool_layer = deconvolution.MaxUnpool2DLayer(
+            [pool_layer, switch_layer],
+        )
+
+        expr = lasagne.layers.get_output(unpool_layer)
+        f = theano.function([X_var], expr, allow_input_downcast=True)
+
+        unpooled = f(X)
+        unpooled_expected  = np.array([[0, 0, 0, 0],
+                                       [0, 6, 5, 0],
+                                       [9, 0, 0, 9],
+                                       [0, 0, 0, 0]]).reshape(1, 1, 4, 4)
+        np.testing.assert_array_almost_equal(unpooled_expected, unpooled)
+
 class TestDeconv2DLayer():
 
     def test_weight_sharing(self):
