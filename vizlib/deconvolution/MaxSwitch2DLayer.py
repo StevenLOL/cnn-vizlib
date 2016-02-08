@@ -184,7 +184,7 @@ class DownsampleFactorMaxSwitches(Op):
                              self.ignore_border, self.st, self.padding)
         return [shp]
 
-    # UNSURE IF THIS IS NEEDED. THE GRAD SHOULD BE IRRELEVANT.
+    # FIXME: UNSURE IF THIS IS NEEDED. THE GRAD SHOULD BE IRRELEVANT.
     # def grad(self, inp, grads):
     #     x, = inp
     #     gz, = grads

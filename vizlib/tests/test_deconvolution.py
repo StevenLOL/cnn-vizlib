@@ -28,6 +28,18 @@ class TestMaxSwitch2DLayer():
         switches = f(X)
         np.testing.assert_array_equal(expected_switches, switches)
 
+class TestDeconv2DLayer():
+
+    def test_weight_sharing(self):
+        input_layer = lasagne.layers.InputLayer((None, 3, 32, 32))
+        conv_layer = lasagne.layers.Conv2DLayer(input_layer, 3, 4, pad='same')
+        deconv_layer = deconvolution.Deconv2DLayer(conv_layer)
+
+        # Now pretend to 'train' the conv_layer
+        conv_layer.W.set_value(conv_layer.W.get_value() * 10) # it is 10x better!
+
+        assert conv_layer != deconv_layer
+
 def test_unpool():
 
     X = np.array([[
