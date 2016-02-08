@@ -1,1 +1,1 @@
-from maximize import maximize_score, scores
+from maximize import maximize_scores, scores

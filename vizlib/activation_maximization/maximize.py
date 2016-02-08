@@ -1,7 +1,7 @@
 import lasagne
 import theano
 
-def maximize_score(
+def maximize_scores(
     output_layer,
     X_init,
     number_of_iterations,
@@ -52,7 +52,7 @@ def maximize_score(
         histories.append(history)
     return results
 
-def scores(X, output_layer, ignore_nonlinearity=False):
+def scores(X, output_layer, ignore_nonlinearity=True):
     if ignore_nonlinearity:
         original_nonlinearity = output_layer.nonlinearity
         output_layer.nonlinearity = lasagne.nonlinearities.identity

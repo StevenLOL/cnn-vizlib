@@ -63,7 +63,7 @@ class TestMaximizeScores():
         f = theano.function([], expressions)
         initial_scores = f()
 
-        scores_and_maximizers = vizlib.activation_maximization.maximize_score(
+        scores_and_maximizers = vizlib.activation_maximization.maximize_scores(
             dense_layer, X_init, n_iterations, max_norm=max_norm)
 
         np.testing.assert_array_less(
