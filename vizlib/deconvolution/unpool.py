@@ -1,12 +1,10 @@
 import numpy as np
 
-
 def unpool(
     pooled_input, switches,
     pool_size,
     stride=None,
-    padding=(0, 0)
-):
+    padding=(0, 0)):
     if stride is None:
         stride = pool_size
     if stride != pool_size:
@@ -22,10 +20,10 @@ def unpool(
     result = np.zeros(tuple(shape), dtype=pooled_input.dtype)
 
     b, c, nr, nc = pooled_input.shape
-    for i in xrange(b):
-        for j in xrange(c):
-            for k in xrange(nr):
-                for l in xrange(nc):
+    for i in range(b):
+        for j in range(c):
+            for k in range(nr):
+                for l in range(nc):
                     # translate localized id indices to global 2d
                     s = int(switches[i, j, k, l])
                     rk = k * w + s // w
