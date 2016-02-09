@@ -32,7 +32,6 @@ class TestMaxUnpool2DLayer():
 
     def test_maxunpool(self):
 
-        theano.config.cxx=''
         X = np.array([[1, 2, 3, 4],
                       [5, 6, 5, 1],
                       [9, 0, 1, 9],
