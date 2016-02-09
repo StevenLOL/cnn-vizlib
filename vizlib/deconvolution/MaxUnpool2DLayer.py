@@ -44,7 +44,7 @@ class UpsampleFactorMax(theano.Op):
         output_shape[0] = pooled.shape[0]
 
         if (output[0] is None) or (output[0].shape != output_shape):
-            output[0] = np.empty(output_shape, dtype=pooled.dtype)
+            output[0] = np.zeros(output_shape, dtype=pooled.dtype)
         output = output[0]
 
         w, h = self.pool_size

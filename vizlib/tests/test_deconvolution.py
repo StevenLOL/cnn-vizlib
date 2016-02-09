@@ -36,7 +36,7 @@ class TestMaxUnpool2DLayer():
         X = np.array([[1, 2, 3, 4],
                       [5, 6, 5, 1],
                       [9, 0, 1, 9],
-                      [3, 4, 5, 6]])
+                      [3, 4, 5, 6]], dtype=theano.config.floatX)
         X = X.reshape((1, 1, ) + X.shape)
         X_var = T.tensor4('X')
         input_layer = lasagne.layers.InputLayer(X.shape, X_var)
@@ -56,10 +56,13 @@ class TestMaxUnpool2DLayer():
         f = theano.function([X_var], expr, allow_input_downcast=True)
 
         unpooled = f(X)
-        unpooled_expected  = np.array([[0, 0, 0, 0],
-                                       [0, 6, 5, 0],
-                                       [9, 0, 0, 9],
-                                       [0, 0, 0, 0]]).reshape(1, 1, 4, 4)
+        unpooled_expected  = np.array(
+            [[0, 0, 0, 0],
+             [0, 6, 5, 0],
+             [9, 0, 0, 9],
+             [0, 0, 0, 0]],
+            dtype=theano.config.floatX
+        ).reshape(1, 1, 4, 4)
         np.testing.assert_array_almost_equal(unpooled_expected, unpooled)
 
 class TestDeconv2DLayer():
