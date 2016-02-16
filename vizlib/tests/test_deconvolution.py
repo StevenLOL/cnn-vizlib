@@ -68,7 +68,7 @@ class TestDeconv2DLayer():
 
     def test_weight_sharing(self):
         input_layer = lasagne.layers.InputLayer((None, 3, 32, 32))
-        conv_layer = lasagne.layers.Conv2DLayer(input_layer, 3, 4, pad='same')
+        conv_layer = lasagne.layers.Conv2DLayer(input_layer, 3, 5, pad='same')
         deconv_layer = deconvolution.Deconv2DLayer(conv_layer)
 
         # Now pretend to 'train' the conv_layer

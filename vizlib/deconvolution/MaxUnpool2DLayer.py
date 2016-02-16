@@ -126,5 +126,4 @@ class UpsampleFactorMax(theano.Op):
         return ccode % locals()
 
     def c_code_cache_version(self):
-        return None
         return (0, 6, 8, 3)
