@@ -10,13 +10,21 @@ class DataSet(object):
 
     def __init__(self, X, y):
         self.X = ensure_batch_chan_row_col(X).astype(theano.config.floatX)
+        # TODO: support regression datasets
         self.y = np.array(y).astype(np.int32)
+
         self.mean = None
         self.std = None
 
     def standardize(self):
         self.X, self.mean, self.std = standardize(self.X)
         return self
+
+    def __getitem__(self, key):
+        return DataSet(self.X[key], self.y[key])
+
+    def __len__(self):
+        return len(self.X)
 
     def unstandardize(self):
         if self.mean is None or self.std is None:
