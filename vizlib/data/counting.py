@@ -20,9 +20,10 @@ def counting_2d(size=(32, 32), n_examples=10000, max_spots=6, seed=42):
         n_spots = np.random.randint(0, max_spots)
         assert n_spots < max_spots
 
-        spot_upper_left = generate_non_overlapping_points(
-            size[0] - spot.shape[0], size[1] - spot.shape[1], n_spots)
-        for y, x in spot_upper_left:
+        spots_upper_left = generate_non_overlapping_points(
+            size[0] - 3, size[1] - 3, n_spots
+        )
+        for y, x in spots_upper_left:
             for yo in range(spot.shape[0]):
                 for xo in range(spot.shape[1]):
                     # the if ensures that already placed spots are not overwritten.

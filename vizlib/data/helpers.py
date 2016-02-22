@@ -44,7 +44,10 @@ class DataSet(object):
             samples = self.X[self.y == c][:n_samples_per_class]
             # might not always have n_samples_per_class, i_inner fixes this.
             for ax, x in zip(sub_axes, samples):
-                ax.imshow(x.squeeze())
+                # imshow seems to distort the aspect ratio sometimes
+                # so I use matshow instead.
+                ax.matshow(x.squeeze())
+                ax.axis('off')
                 ax.set_title(c)
             i += n_samples_per_class
         return self
