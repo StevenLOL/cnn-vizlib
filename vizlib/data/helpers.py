@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import theano
 
 class DataSet(object):
+    '''This dataset object is only for image data, which we assume to be
+    BxCxNxM'''
 
     def __init__(self, X, y):
         self.X = ensure_batch_chan_row_col(X).astype(theano.config.floatX)
@@ -95,9 +97,9 @@ def standardize(dataset):
 
     # want 0 mean, 1 std, so first center on the mean:
     standardized = dataset
-    mean = standardized.mean()
+    mean = standardized.mean(axis=(1, 2, 3))[:, None, None, None]
     standardized -= mean
-    std = standardized.std()
+    std = standardized.std(axis=(1, 2, 3))[:, None, None, None]
     standardized /= std
     return (standardized, mean, std)
 
