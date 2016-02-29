@@ -5,12 +5,27 @@ def maximize_scores(
     output_layer,
     X_init,
     number_of_iterations,
-    ignore_nonlinearity=False,
+    ignore_nonlinearity=True,
     output_node=None,
     learning_rate=0.01,
     momentum=0.9,
     max_norm=None,
 ):
+    '''Returns a list of (maximizer_i, score_i) where `maximizer_i` is the
+    input that maximizes the activation of the `i`-th node in the `output_layer`,
+    and `score_i` is the corresponding score.
+
+    Gradient descent is used to find the maximizers.
+
+    Use `output_node=<i>` to get the output only for the `i`-th node.
+
+    We define the activation as the sum of the inputs, unless
+    `ignore_nonlinearity` is False, then we take it to mean the output.
+
+    Using nonlinearities in a softmax layer is potentially misleading,
+    since inputs can be produced that minimize other class scores,
+    rather than maximizing their own.
+    '''
     X = theano.shared(value=X_init, name='X', borrow=False)
     expressions = scores(X, output_layer, ignore_nonlinearity)
     if output_node:
@@ -48,7 +63,7 @@ def maximize_scores(
                 best_X = X.get_value(borrow=False)
                 best_value = current_value
 
-        results.append((best_value, best_X))
+        results.append((-best_value, best_X))
         histories.append(history)
     return results
 

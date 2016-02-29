@@ -31,3 +31,35 @@ def test_image_occlusion():
     m = vizlib.class_saliency_map.occlusion(X, output_layer, 0)
 
     assert m.shape == (32, 32)
+
+class TestImageOcclusion(object):
+
+    def test_image_occlusion(self):
+        # I expect that when I take a convolution layer w/ a filter equal
+        # to the input image, and a dense layer that is simply the identity,
+        # then the parts of the image that are considered important,
+        # should be the same parts that have a large value in the original
+        # image.
+
+        # Arrange
+        X = np.array([[[[-1, 1, -1],
+                        [1, -1, 1],
+                        [-1, 1, -1]]]]).astype(theano.config.floatX)
+        il = lasagne.layers.InputLayer((1, 1, 3, 3))
+        cl = lasagne.layers.Conv2DLayer(
+            il,
+            num_filters=1,
+            filter_size=(3, 3),
+            W=X,
+        )
+        dl = lasagne.layers.DenseLayer(
+            cl, 1, W=np.array([[1]]).astype(theano.config.floatX)
+        )
+
+        # Apply
+        map = vizlib.class_saliency_map.occlusion(X, dl, 0, square_length=1)
+
+        # Assert
+        map_order = list(np.argsort(map.flatten()))
+        x_order = list(np.argsort(X.flatten()))
+        assert map_order == x_order

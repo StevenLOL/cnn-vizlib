@@ -29,6 +29,7 @@ def occlusion(X, output_layer, output_node, square_length=7):
     predict_proba = theano.function([X_var], scores[output_node])
 
     # generate occluded images
+    import pdb; pdb.set_trace()
     for i in range(s0):
         for j in range(s1):
             x_pad = np.pad(img, ((0, 0), (pad, pad), (pad, pad)), 'constant')

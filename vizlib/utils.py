@@ -5,6 +5,7 @@ import lasagne
 import theano
 import theano.tensor as T
 import numpy as np
+from time import time
 
 
 def get_input_var(output_layer):
@@ -14,7 +15,10 @@ def get_input_var(output_layer):
     return layer.input_var
 
 class GpuNeuralNet(nolearn.lasagne.NeuralNet):
-    '''Like nolearn.lasagne.NeuralNet but then on GPU. '''
+    '''Like nolearn.lasagne.NeuralNet but then on GPU.
+
+    http://deeplearning.net/tutorial/logreg.html for reference
+    '''
     def __init__(
         self,
         layers,
@@ -63,18 +67,49 @@ class GpuNeuralNet(nolearn.lasagne.NeuralNet):
             **kwargs
         )
 
-    def fit(self, X, y, epochs=None):
-        self.X_shared = theano.shared(X)
-        self.y_shared = theano.shared(y)
-        assert not getattr(self, '_initialized', False), \
-                "Do not call initialize yourself! It needs self.X_shared, self.y_shared available"
+        old_train_split = self.train_split
+        def overwritten_train_split(X, y, self):
+            # XXX: remember, X and y are indices!
+            # But stratified fold expects y to be class values,
+            # so we give those, and then have to reorder y...
+            y_class = self.y_shared.get_value()[y]
+            X_train, X_valid, y_train, y_valid = old_train_split(X, y_class, self)
+            y_train = X_train
+            y_valid = X_valid
+            return X_train, X_valid, y_train, y_valid
+        self.train_split = overwritten_train_split
 
+    def initialize_shared_weights(self, X, y=None):
+        # XXX: just going to overwrite current values.
+        if X is not None:
+            self.X_shared = theano.shared(X)
+        if y is not None:
+            self.y_shared = theano.shared(y)
+
+    def initialize(self, X=None, y=None):
+        assert (X is not None and y is not None) or (X is None and y is None)
+        if X is not None:
+            self.initialize_shared_weights(X, y)
+        super(GpuNeuralNet, self).initialize()
+
+    def fit(self, X, y, epochs=None):
+        self.initialize_shared_weights(X, y)
         # XXX: Pass X and y as indices instead of datasets.
         # Now the batch iterator will return slices of indices,
         # will are used to index the shared variables.
-        X = np.arange(len(X), dtype=theano.config.floatX)
+        X = np.arange(len(X), dtype=np.int32)
         y = np.arange(len(y), dtype=np.int32)
         return super(GpuNeuralNet, self).fit(X, y, epochs)
+
+    def predict(self, X):
+        self.initialize_shared_weights(X)
+        X = np.arange(len(X), dtype=np.int32)
+        return super(GpuNeuralNet, self).predict(X)
+
+    def predict_proba(self, X):
+        self.initialize_shared_weights(X)
+        X = np.arange(len(X), dtype=np.int32)
+        return super(GpuNeuralNet, self).predict_proba(X)
 
     def _create_iter_funcs(self, layers, objective, update, output_type):
         y_batch = output_type('y_batch')
@@ -86,7 +121,7 @@ class GpuNeuralNet(nolearn.lasagne.NeuralNet):
             layers, target=y_batch, **objective_kw)
         loss_eval = objective(
             layers, target=y_batch, deterministic=True, **objective_kw)
-        predict_proba = lasagne.get_output(output_layer, None, deterministic=True)
+        predict_proba = lasagne.layers.get_output(output_layer, None, deterministic=True)
         if not self.regression:
             predict = predict_proba.argmax(axis=1)
             accuracy = T.mean(T.eq(predict, y_batch))
@@ -110,29 +145,31 @@ class GpuNeuralNet(nolearn.lasagne.NeuralNet):
         # I found that passing a vector [1, 2, 3, 4]
         # was much faster than using a slice [1:4+1].
         # This is why I use vectors here, rather than scalars.
-        batch_idxs = [T.ivector('Xidx'), T.ivector('yidx')]
-        ix, iy = batch_idxs
+        ix, iy = (T.ivector('Xidx'), T.ivector('yidx'))
 
         train_iter = theano.function(
-            inputs=batch_idxs,
+            inputs=[ix, iy],
             outputs=[loss_train, accuracy],
             updates=updates,
-            givens={Xvar: self.X_shared[ix], yvar: self.y_shared[iy]},
-            allow_input_downcast=True,
+            givens={
+                Xvar: self.X_shared[ix],
+                yvar: self.y_shared[iy],
+            },
         )
 
         eval_iter = theano.function(
-            inputs=batch_idxs,
+            inputs=[ix, iy],
             outputs=[loss_eval, accuracy],
-            givens={Xvar: self.X_shared[ix], yvar: self.y_shared[iy]},
-            allow_input_downcast=True,
+            givens={
+                Xvar: self.X_shared[ix],
+                yvar: self.y_shared[iy],
+            },
         )
 
         predict_iter = theano.function(
-            inputs=batch_idxs[0:-1],
+            inputs=[ix],
             outputs=predict_proba,
             givens={Xvar: self.X_shared[ix]},
-            allow_input_downcast=True,
         )
 
         return train_iter, eval_iter, predict_iter
