@@ -52,20 +52,22 @@ def maximize_scores(
             updates=updates
         )
 
-        current_value = best_value = float(update_iter())
+        # lasagne expects minimization, we want maximization.
+        # this is why I am messing around w/ minus signs.
+        current_value = best_value = -float(update_iter())
         history = [current_value]
         best_X = X.get_value(borrow=False)
 
         for i in range(number_of_iterations):
-            current_value = float(update_iter())
+            current_value = -float(update_iter())
             history.append(current_value)
-            if current_value < best_value:
+            if current_value > best_value:
                 best_X = X.get_value(borrow=False)
                 best_value = current_value
 
         results.append((-best_value, best_X))
         histories.append(history)
-    return results
+    return (histories, results)
 
 def scores(X, output_layer, ignore_nonlinearity=True):
     if ignore_nonlinearity:

@@ -48,7 +48,7 @@ class TestMaximizeScores():
     def setup_method(self, method):
         np.random.seed(42)
 
-    def simple_conv_network(self, input_shape):
+    def simple_conv_network_3_outputs(self, input_shape):
         input_layer = lasagne.layers.InputLayer((None, ) + input_shape)
         conv_layer = lasagne.layers.Conv2DLayer(input_layer, 7, (3, 3))
         dense_layer = lasagne.layers.DenseLayer(conv_layer, 3)
@@ -69,16 +69,45 @@ class TestMaximizeScores():
     def norm(self, X):
         return lasagne.utils.compute_norms(X).max()
 
+    def split_in_3(self, X, axis):
+        X = np.array(X)
+        if axis != 1:
+            raise NotImplemented()
+        first_split = X.shape[1] // 3
+        second_split = 2 * X.shape[1] // 3
+        return (
+            X[:, :first_split],
+            X[:, first_split:second_split],
+            X[:, second_split:],
+        )
+
     def test_maximize_scores(self):
         # Arrange
         X_init = self.simple_dataset((3, 32, 32))
-        network = self.simple_conv_network((3, 32, 32))
-        X = theano.shared(X_init)
-        initial_norm = lasagne.utils.compute_norms(X_init).max()
-        initial_scores = self.scores(X, network)
+        network = self.simple_conv_network_3_outputs((3, 32, 32))
 
         # Apply
-        scores_and_maximizers = vizlib.activation_maximization.maximize_scores(
+        histories, scores_and_maximizers = vizlib.activation_maximization.maximize_scores(
+            network,
+            X_init,
+            number_of_iterations=100,
+            max_norm=None
+        )
+        scores, maximizers = zip(*scores_and_maximizers)
+
+        # Assert: The history can be noisy, but overall it should be decreasing.
+        initial, middle, final = self.split_in_3(histories, axis=1)
+        np.testing.assert_array_less(initial.mean(axis=1), middle.mean(axis=1))
+        np.testing.assert_array_less(middle.mean(axis=1), final.mean(axis=1))
+
+    def test_maximize_scores_with_norm(self):
+        # Arrange
+        X_init = self.simple_dataset((3, 32, 32))
+        network = self.simple_conv_network_3_outputs((3, 32, 32))
+        initial_norm = lasagne.utils.compute_norms(X_init).max()
+
+        # Apply
+        histories, scores_and_maximizers = vizlib.activation_maximization.maximize_scores(
             network,
             X_init,
             number_of_iterations=100,
@@ -87,6 +116,8 @@ class TestMaximizeScores():
         scores, maximizers = zip(*scores_and_maximizers)
 
         # Assert
-        np.testing.assert_array_less(initial_scores, scores)
         for x in maximizers:
-            assert np.isclose(self.norm(X.get_value()), initial_norm)
+            assert np.isclose(self.norm(x), initial_norm)
+        initial, middle, final = self.split_in_3(histories, axis=1)
+        np.testing.assert_array_less(initial.mean(axis=1), middle.mean(axis=1))
+        np.testing.assert_array_less(middle.mean(axis=1), final.mean(axis=1))
