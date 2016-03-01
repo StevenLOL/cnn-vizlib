@@ -29,6 +29,8 @@ def occlusion(X, output_layer, output_node, square_length=7):
     predict_proba = theano.function([X_var], scores[output_node])
 
     # generate occluded images
+    x_occluded[0]
+    base_proba = predict_proba(x_occluded)
     for i in range(s0):
         for j in range(s1):
             if pad == 0:
@@ -40,6 +42,8 @@ def occlusion(X, output_layer, output_node, square_length=7):
                 x_pad[:, i:i + square_length, j:j + square_length] = 0.
                 x_occluded[0] = x_pad[:, pad:-pad, pad:-pad]
 
-            saliency_map[i, j] = 1 - predict_proba(x_occluded)
+            # A pixel is more salient if it causes a large drop in the
+            # probability, i.e., base_proba >> predict_proba
+            saliency_map[i, j] = base_proba - predict_proba(x_occluded)
 
     return saliency_map

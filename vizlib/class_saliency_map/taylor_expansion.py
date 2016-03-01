@@ -22,15 +22,15 @@ Here I_0 is the image to evaluate at.
 import vizlib
 import theano
 
-def taylor_expansion_functions(output_layer):
+def taylor_expansion_functions(output_layer, ignore_nonlinearity=True):
     X = vizlib.utils.get_input_var(output_layer)
     scores = vizlib.activation_maximization.maximize.scores(
-        X, output_layer, ignore_nonlinearity=True)
+        X, output_layer, ignore_nonlinearity=ignore_nonlinearity)
     return [
         theano.function([X], theano.grad(score, wrt=X).max(axis=1)[0])
         for score in scores
     ]
 
-def taylor_expansion(X, output_layer, output_node):
-    fs = taylor_expansion_functions(output_layer)
+def taylor_expansion(X, output_layer, output_node, ignore_nonlinearity=True):
+    fs = taylor_expansion_functions(output_layer, ignore_nonlinearity)
     return fs[output_node](X)
