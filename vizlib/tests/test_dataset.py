@@ -4,6 +4,9 @@ import numpy as np
 
 class TestDataSet(object):
 
+    def setup_method(self, method):
+        np.random.seed(42)
+
     def test_standardize(self):
         # Arrange
         x1 = np.array([[0, 1, 0],
@@ -93,6 +96,39 @@ class TestDataSet(object):
         assert ds.mean.shape == ()
         np.testing.assert_allclose(ds.mean, 12, atol=1e-1)
         np.testing.assert_allclose(ds.std, 10, atol=1e-1)
+
+    # Could not get this to pass! This means that it matters how
+    # you normalize to begin with!
+    # def test_swap_standardization2(self):
+    #     # Arrange
+    #     X = np.random.randn(1e4, 1, 32, 32) * 10 + 12
+    #     y = np.arange(len(X))
+    #     ds = DataSet(X, y)
+    #     ds2 = DataSet(X, y)
+    #     ds2.X = ds2.X.astype(np.float32)
+
+    #     # Apply
+    #     ds.standardize(standardization_type='individual')
+    #     ds2.standardize(standardization_type='individual')
+    #     ds2.unstandardize()
+    #     ds2.standardize(standardization_type='global')
+
+    #     # Assert
+    #     #assert np.abs(ds2.X - ds.X).max() < 1e-5
+    #     np.testing.assert_allclose(ds2.X, ds.X, atol=1e-5)
+
+    def test_unstandardize2(self):
+        # Arrange
+        X = np.random.randn(1e4, 1, 32, 32) * 10 + 12
+        y = np.arange(len(X))
+        ds = DataSet(X, y)
+
+        # Apply
+        ds.standardize(standardization_type='individual')
+        ds.unstandardize()
+
+        # Assert
+        np.testing.assert_allclose(X, ds.X, atol=1e-5)
 
     def test_classes(self):
         # Arrange

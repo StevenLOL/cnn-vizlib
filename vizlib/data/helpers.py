@@ -22,6 +22,9 @@ class DataSet(object):
         self.unstandardize_func = None
 
     def standardize(self, standardization_type='individual'):
+        types = ('individual', 'global', 'class')
+
+
         if self.unstandardize_func is not None:
             self.unstandardize()
 
@@ -37,7 +40,10 @@ class DataSet(object):
             raise NotImplemented()
 
         else:
-            raise ValueError()
+            raise ValueError(
+                '"{}" is not a valid standardization_type, expected one of: {}'\
+                .format(standardization_type, types)
+            )
 
         self.standardization_type = standardization_type
         return self
