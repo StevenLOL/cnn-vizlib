@@ -6,7 +6,7 @@ import numpy as np
 from helpers import DataSet
 
 
-def counting_2d(size=(32, 32), n_examples=10000, min_spots=0, max_spots=5, seed=42):
+def counting_2d(size=(32, 32), n_examples=10000, min_spots=0, max_spots=5, seed=42, standardization_type='individual'):
     if seed is not None:
         np.random.seed(seed)
 
@@ -33,7 +33,9 @@ def counting_2d(size=(32, 32), n_examples=10000, min_spots=0, max_spots=5, seed=
         X.append(img)
         ys.append(n_spots - min_spots)
 
-    return DataSet(X, ys).standardize().shuffle()
+    return DataSet(X, ys)\
+            .standardize(standardization_type=standardization_type)\
+            .shuffle()
 
 
 def generate_non_overlapping_points(w, h, n_points):
