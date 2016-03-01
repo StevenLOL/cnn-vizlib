@@ -3,6 +3,8 @@
 '''
 '''
 import numpy as np
+import pandas as pd
+
 import matplotlib.pyplot as plt
 import theano
 
@@ -17,10 +19,37 @@ class DataSet(object):
 
         self.mean = None
         self.std = None
+        self.unstandardize_func = None
 
-    def standardize(self):
-        self.X, self.mean, self.std = standardize(self.X)
+    def standardize(self, standardization_type='individual'):
+        if self.unstandardize_func is not None:
+            self.unstandardize()
+
+        if standardization_type == 'individual':
+            self.X, self.mean, self.std = standardize(self.X)
+            self.unstandardize_func = unstandardize
+
+        elif standardization_type == 'global':
+            self.X, self.mean, self.std = standardize_globally(self.X)
+            self.unstandardize_func = unstandardize
+
+        elif standardization_type == 'class':
+            raise NotImplemented()
+
+        else:
+            raise ValueError()
+
+        self.standardization_type = standardization_type
         return self
+
+    def one_of_class(self):
+        y = self.classes
+        X = np.array([self.X[self.y == c][0] for c in y])
+        return DataSet(X, y)
+
+    @property
+    def classes(self):
+        return list(set(list(self.y)))
 
     def __getitem__(self, key):
         return DataSet(self.X[key], self.y[key])
@@ -29,9 +58,10 @@ class DataSet(object):
         return len(self.X)
 
     def unstandardize(self):
-        if self.mean is None or self.std is None:
+        if self.unstandardize_func is None:
             raise ValueError('Data is not standardized')
-        self.X = unstandardize(self.X, self.mean, self.std)
+        self.X = self.unstandardize_func(self.X, self.mean, self.std)
+        self.unstandardize_func = None
         return self
 
     def shuffle(self):
@@ -42,9 +72,10 @@ class DataSet(object):
         return self
 
     def show_sample(self):
-        n_samples_per_class = 4
+        n_samples_per_class = min(4, pd.value_counts(self.y).max())
         classes = sorted(set(self.y))
         n_classes = len(classes)
+        vmin, vmax = self.X.min(), self.X.max()
 
         fig, axes = plt.subplots(n_classes, n_samples_per_class,
                                 subplot_kw=dict(xticks=[], yticks=[]))
@@ -52,11 +83,10 @@ class DataSet(object):
         i = 0
         for sub_axes, c in zip(axes, classes):
             samples = self.X[self.y == c][:n_samples_per_class]
-            # might not always have n_samples_per_class, i_inner fixes this.
+            if n_samples_per_class == 1:
+                sub_axes = [sub_axes]
             for ax, x in zip(sub_axes, samples):
-                # imshow seems to distort the aspect ratio sometimes
-                # so I use matshow instead.
-                ax.matshow(x.squeeze())
+                ax.matshow(x.squeeze(), vmin=vmin, vmax=vmax)
                 ax.axis('off')
                 ax.set_title(c)
             i += n_samples_per_class
@@ -110,3 +140,12 @@ def unstandardize(standardized, mean, std):
     dataset *= std
     dataset += mean
     return dataset
+
+@allow_inplace
+def standardize_globally(dataset):
+    standardized = dataset
+    mean = standardized.mean()
+    standardized -= mean
+    std = standardized.std()
+    standardized /= std
+    return (standardized, mean, std)
