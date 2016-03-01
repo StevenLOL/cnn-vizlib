@@ -11,7 +11,7 @@ def maximize_scores(
     momentum=0.9,
     max_norm=None,
 ):
-    '''Returns a list of (maximizer_i, score_i) where `maximizer_i` is the
+    '''Returns a list of (score_i, maximizer_i) where `maximizer_i` is the
     input that maximizes the activation of the `i`-th node in the `output_layer`,
     and `score_i` is the corresponding score.
 

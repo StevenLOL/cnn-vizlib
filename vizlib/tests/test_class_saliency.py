@@ -33,33 +33,69 @@ def test_image_occlusion():
     assert m.shape == (32, 32)
 
 class TestImageOcclusion(object):
-
-    def test_image_occlusion(self):
-        # I expect that when I take a convolution layer w/ a filter equal
-        # to the input image, and a dense layer that is simply the identity,
-        # then the parts of the image that are considered important,
-        # should be the same parts that have a large value in the original
-        # image.
-
-        # Arrange
-        X = np.array([[[[-1, 1, -1],
-                        [1, -1, 1],
-                        [-1, 1, -1]]]]).astype(theano.config.floatX)
+    def conv_network(self, conv_W):
         il = lasagne.layers.InputLayer((1, 1, 3, 3))
         cl = lasagne.layers.Conv2DLayer(
             il,
             num_filters=1,
             filter_size=(3, 3),
-            W=X,
+            W=conv_W,
+            nonlinearity=lasagne.nonlinearities.identity,
         )
         dl = lasagne.layers.DenseLayer(
-            cl, 1, W=np.array([[1]]).astype(theano.config.floatX)
+            cl, 1, W=np.array([[1]]).astype(theano.config.floatX),
+            nonlinearity=lasagne.nonlinearities.sigmoid,
         )
+        return dl
+
+
+    def test_image_occlusion_1_by_1(self):
+        # Arrange
+        X = np.array([[[[-1, 1, -1],
+                        [1, -1, 1],
+                        [-1, 1, -1]]]]).astype(theano.config.floatX)
+        dl = self.conv_network(conv_W=X[:, :, ::-1, ::-1])
 
         # Apply
         map = vizlib.class_saliency_map.occlusion(X, dl, 0, square_length=1)
 
         # Assert
-        map_order = list(np.argsort(map.flatten()))
-        x_order = list(np.argsort(X.flatten()))
-        assert map_order == x_order
+        assert len(set(map.flatten().tolist())) == 1,\
+                'All pixels should be equally important'
+
+    def test_image_occlusion_3_by_3(self):
+        # Arrange
+        X = np.array([[[[-1, 1, -1],
+                        [1, -1, 1],
+                        [-1, 1, -1]]]]).astype(theano.config.floatX)
+        dl = self.conv_network(conv_W=X[:, :, ::-1, ::-1])
+
+        # Apply
+        map = vizlib.class_saliency_map.occlusion(X, dl, 0, square_length=3)
+
+        # Assert
+        # Pixels in the center more important than at the border, since occluding
+        # those will occlude most of the image (which matches perfectly w/ filter)
+        # Since the values are identical, sorting order is not guaranteed.
+        expected = [4, 1, 3, 5, 7, 0, 2, 6, 8]
+        actual = np.lexsort((np.arange(len(map.flatten())), -map.flatten())).tolist()
+        assert expected == actual
+
+    def test_image_occlusion_3_by_3_left_part_important(self):
+        # Arrange
+        X = np.array([[[[-1, 1, -1],
+                        [1, -1, 1],
+                        [-1, 1, -1]]]]).astype(theano.config.floatX)
+        W = np.array([[[[-1, 1, 1],
+                        [1, -1, -1],
+                        [-1, 1, 1]]]]).astype(theano.config.floatX)
+        # Remember, the filter of a convolution is flipped.
+        dl = self.conv_network(conv_W=W[:, :, ::-1, ::-1])
+
+        #Apply
+        map = vizlib.class_saliency_map.occlusion(X, dl, 0, square_length=3)
+
+        # Assert
+        expected = [3, 0, 6, 4, 1, 7, 2, 5, 8]
+        actual = np.argsort(-map.flatten()).tolist()
+        assert expected == actual
