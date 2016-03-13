@@ -84,7 +84,7 @@ class DataSet(object):
         self.unstandardize()
         rgb = self.to_nxmxc().X
         gray = np.array([cv2.cvtColor(x, cv2.COLOR_RGB2GRAY)
-                         for x in rgb])[:, None, :, :]
+                         for x in rgb])
         self.standardize(standardization_type)
         return DataSet(gray, self.y)
 
