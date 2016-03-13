@@ -1,4 +1,5 @@
 from vizlib.data.helpers import DataSet
+from vizlib.data.helpers import number_of_errors_to_show
 import numpy as np
 
 
@@ -6,6 +7,33 @@ class TestDataSet(object):
 
     def setup_method(self, method):
         np.random.seed(42)
+
+    def test_zoom(self):
+        # Arrange
+        X = np.zeros((300, 1, 128, 128))
+        y = np.arange(len(X))
+        ds = DataSet(X, y)
+
+        # Apply
+        zoomed = ds.zoom(0.5)
+
+        # Assert
+        assert zoomed.X.shape == (300, 1, 64, 64)
+
+    def test_to_nxmxc(self):
+        # Arrange
+        X = np.zeros((100, 3, 4, 2))
+        y = np.arange(len(X))
+        ds = DataSet(X, y)
+        assert ds.X.shape == (100, 3, 4, 2)
+
+        # Apply
+        nxmxc = ds.to_nxmxc()
+
+        # Assert
+        assert nxmxc.X.shape == (100, 4, 2, 3)
+        for x in nxmxc.X:
+            assert x.shape == (4, 2, 3)
 
     def test_standardize(self):
         # Arrange
@@ -46,6 +74,25 @@ class TestDataSet(object):
         # Assert
         np.testing.assert_allclose(ds.X[0].squeeze(), x1)
         np.testing.assert_allclose(ds.X[1].squeeze(), x2)
+
+    def test_standardize_none(self):
+        # Arrange
+        x1 = np.array([[0, 1, 0],
+                       [0, 1, 0],
+                       [0, 1, 0]])
+        x2 = np.array([[1, 0, 1],
+                       [1, 0, 1],
+                       [1, 0, 1]])
+        X = np.array([x1, x2])
+        y = np.arange(len(X))
+        ds = DataSet(X, y)
+        Xorig = ds.X.copy()
+
+        # Apply
+        ds.standardize(standardization_type=None)
+
+        # Assert
+        np.testing.assert_allclose(Xorig, ds.X)
 
     def test_standardize_global(self):
         # Arrange
@@ -163,3 +210,29 @@ class TestDataSet(object):
         # Assert
         np.testing.assert_equal(sample.X, np.array([a, b, c, d]))
         np.testing.assert_equal(sample.y, np.array([0, 1, 2, 3]))
+
+
+def test_show_errors():
+    # Arrange
+    conf_mat = np.array([
+        [ 4,  5,  8, 10,  3, 20],
+        [ 6, 14,  6,  4,  8, 12],
+        [ 4,  4, 10, 11,  4, 17],
+        [ 0,  8,  8,  3,  9, 22],
+        [ 0, 10,  2, 12, 18,  8],
+        [ 2,  9,  9,  2,  7, 21]
+    ])
+    expected = np.array([
+        [ 0, 1, 2, 3, 1, 5 ],
+        [ 2, 0, 1, 1, 3, 5 ],
+        [ 1, 1, 0, 3, 1, 6 ],
+        [ 0, 2, 2, 0, 3, 5 ],
+        [ 0, 4, 1, 4, 0, 3 ],
+        [ 1, 4, 3, 1, 3, 0 ],
+    ])
+
+    # Apply
+    to_show = number_of_errors_to_show(conf_mat, 12)
+
+    # Assert
+    np.testing.assert_array_equal(to_show, expected)
