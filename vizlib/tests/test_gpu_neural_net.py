@@ -1,5 +1,3 @@
-#!/usr/bin/env python2.7
-# encoding: utf-8
 '''Test my GpuNeuralNet implementation against the nolearn.lasagne implementation.
 '''
 import vizlib
