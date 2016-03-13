@@ -2,6 +2,81 @@
 
 Implement multiple convolution network visualization methods on top of [theano](https://github.com/Theano/Theano) and [lasagne](https://github.com/Lasagne/Lasagne).
 
+# Installation
+
+Using [virtualenv](http://docs.python-guide.org/en/latest/dev/virtualenvs/):
+
+    $ pip install virtualenv
+    $ pip install virtualenvwrapper
+    $ source virtualenvwrapper.sh
+    $ mkvirtualenv venv
+    $ workon venv
+    $ cd cnn-vizlib/
+    $ pip install -r requirements.txt
+    $ pip install -e .
+
+To install python (required for the shared object files):
+
+    deactivate
+    wget https://www.python.org/ftp/python/2.7.9/Python-2.7.9.tgz
+    tar xzvf Python-2.7.9.tgz 
+    cd Python-2.7.9
+    ./configure --prefix=$HOME/.local --enable-shared
+    make -j7 && make install
+
+To install [opencv](http://opencv.org/downloads.html):
+
+    $ wget https://github.com/Itseez/opencv/archive/2.4.12.zip
+    $ unzip 2.4.12.zip
+    $ cd opencv-2.4.12
+    $ mkdir release
+    $ cd release
+    $ cmake -D PYTHON_EXECUTABLE=`which python`\
+        -D PYTHON_LIBRARY=$HOME/.local/lib/libpython2.7.so\
+        -D CMAKE_BUILD_TYPE=RELEASE\
+        -D CMAKE_INSTALL_PREFIX=$HOME/.local ..
+    $ make && make install
+
+    $ ln -s $HOME/.local/lib/python2.7/site-packages/cv.py \
+        $HOME/.virtualenvs/venv/lib/python2.7/site-packages/cv.py
+    $ ln -s $HOME/.local/lib/python2.7/site-packages/cv2.so \
+        $HOME/.virtualenvs/venv/lib/python2.7/site-packages/cv2.so
+
+Verify that everything is correct:
+
+    $ cd cnn-vizlib
+    $ py.test
+
+# Notebooks
+
+All liacs servers that have GPU are not accessible from outside networks.
+However, we can run a notebook server on them and access it through ssh
+tunneling.
+
+    remote$    ipython profile create notebookserver
+    # will generate a notebook config file
+    remote$    vim ~/.ipython/profile_notebookserver/ipython_notebook_config.py
+
+    # insert following lines
+    c = get_config()
+    c.NotebookApp.ip = 'localhost'
+    c.NotebookApp.port = 9999
+    c.NotebookApp.open_browser = False
+    # save and exit
+
+    remote$    ipython notebook --profile=notebookserver
+
+Now forward the port
+
+    local$     ssh -L 8889:localhost:9999 remote
+
+Now point your browser to the following url:
+
+    http://localhost:8889
+
+You can also use `https` and passwords, but I did not bother as the information
+is not private.
+
 # Romulus
 
     local$      ssh -L 8080:localhost:9999 romulus
@@ -32,36 +107,6 @@ I could now install `opencv` locally:
 
     conda install opencv
 
-# Working on cnn-vizlib
-
-To install a python package as editable use `pip -e`. So to install `vizlib` use:
-
-    pip install -e cnn-vizlib --user
-
-The `--user` installs the package for the current user only, which is ideal on
-remote desktops where you do not have root access.
-
-# Packages
-
-`<TODO: FIND A BETTER SOLUTION>`
-
-Currently `cnn-vizlib` requires bleeding-edge installation of `lasagne` (which
-in turn requires `theano`). Both can be installed using:
-
-    pip install --upgrade https://github.com/Theano/Theano/archive/master.zip --user
-    pip install --upgrade https://github.com/Lasagne/Lasagne/archive/master.zip --user
-    
-    In [3]: lasagne.__version__
-    Out[3]: '0.2.dev1'
-
-    In [5]: theano.__version__
-    Out[5]: '0.7.0.dev-15c90dd36c95ea2989a2c0085399147d15a6a477'
-
-# Tests
-
-You can run the tests from the `cnn-vizlib` by using `py.test` command. If the
-`py.test` command is not available install it using `pip install pytest --user`.
-
 # Methods
 
 - activation maximization
@@ -69,12 +114,6 @@ You can run the tests from the `cnn-vizlib` by using `py.test` command. If the
     - occlusion based
     - gradient based
 - deconvolution network
-
-# Dependencies
-
-- theano
-- lasagne
-- numpy
 
 # Data
 
