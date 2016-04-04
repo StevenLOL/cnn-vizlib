@@ -5,7 +5,7 @@ import theano
 import numpy as np
 
 
-def occlusion(X, output_layer, output_node, square_length=7):
+def occlusion(X, output_layer, output_node, square_length=7, ignore_nonlinearity=False):
     # The following was largely implemented by nolearn.
     # I just had to change some things around to accept a single output_layer,
     # rather than a neural net
@@ -25,12 +25,12 @@ def occlusion(X, output_layer, output_node, square_length=7):
 
     X_var = vizlib.utils.get_input_var(output_layer)
     scores = vizlib.activation_maximization.scores(
-        X_var, output_layer, ignore_nonlinearity=False)
+        X_var, output_layer, ignore_nonlinearity=ignore_nonlinearity)
     predict_proba = theano.function([X_var], scores[output_node])
 
     # generate occluded images
     x_occluded[0]
-    base_proba = predict_proba(x_occluded)
+    base_likelihood = predict_proba(X)
     for i in range(s0):
         for j in range(s1):
             if pad == 0:
@@ -43,7 +43,7 @@ def occlusion(X, output_layer, output_node, square_length=7):
                 x_occluded[0] = x_pad[:, pad:-pad, pad:-pad]
 
             # A pixel is more salient if it causes a large drop in the
-            # probability, i.e., base_proba >> predict_proba
-            saliency_map[i, j] = base_proba - predict_proba(x_occluded)
+            # probability, i.e., base_likelihood >> predict_proba
+            saliency_map[i, j] = base_likelihood - predict_proba(x_occluded)
 
     return saliency_map

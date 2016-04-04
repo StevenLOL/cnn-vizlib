@@ -12,17 +12,16 @@ def die(standardization_type='individual'):
     y = np.load(DIE_Y_FILE).astype(np.int32) - 1
     return DataSet(X, y, label_lookup=dict(zip(y, y + 1)))\
             .to_grayscale()\
-            .standardize(standardization_type)\
-            .to_nxmxc()\
-            .shuffle()
+            .standardize(standardization_type)
+            # .shuffle()
 
 def cache(func):
-    def wrapper():
+    def wrapper(*args, **kwargs):
         fname = os.path.join(os.path.dirname(__file__), func.__name__ + '.p')
         try:
             ds = DataSet.from_pickle(fname)
         except:
-            ds = func()
+            ds = func(*args, **kwargs)
             ds.to_pickle(fname)
         return ds
     return wrapper

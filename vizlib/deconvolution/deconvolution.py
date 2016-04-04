@@ -11,14 +11,16 @@ def get_deconv_output(output_layer, input_var=None):
 
     # find the expressions up to (exclusive) the first DenseLayer
     expressions = [input_var]
-    for layer in top_order:
+    first_dense_idx = 1
+    for layer in top_order[1:]:
         if isinstance(layer, lasagne.layers.DenseLayer):
             break
         expressions.append(layer.get_output_for(expressions[-1]))
+        first_dense_idx += 1
     expr = expressions[-1]
 
     # traverse down, building the deconv network
-    for i, layer in reversed(list(enumerate(top_order[1:idx], 1))):
+    for i, layer in reversed(list(enumerate(top_order[1:first_dense_idx], 1))):
         if isinstance(layer, lasagne.layers.Conv2DLayer):
             conv_layer = Deconv2DLayer(layer)
             expr = conv_layer.get_output_for(expr)

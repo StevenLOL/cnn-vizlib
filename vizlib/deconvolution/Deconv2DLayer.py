@@ -36,10 +36,17 @@ class Deconv2DLayer(lasagne.layers.Layer):
         # for now we only implement option 0.
 
     def get_W_shape(self):
-        return lasagne.layers.Conv2DLayer.get_W_shape(self)
+        num_input_channels = self.input_shape[1]
+        return (self.num_filters, num_input_channels) + self.filter_size
 
     def get_output_shape_for(self, input_shape):
-        return lasagne.layers.Conv2DLayer.get_output_shape_for(self)
+        pad = self.pad if isinstance(self.pad, tuple) else (self.pad,) * self.n
+        batchsize = input_shape[0]
+        return ((batchsize, self.num_filters) +
+                tuple(conv_output_length(input, filter, stride, p)
+                      for input, filter, stride, p
+                      in zip(input_shape[2:], self.filter_size,
+                             self.stride, pad)))
 
     def get_output_for(self, input, input_shape=None, **kwargs):
         if input_shape is None:

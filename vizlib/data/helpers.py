@@ -86,7 +86,7 @@ class DataSet(object):
         gray = np.array([cv2.cvtColor(x, cv2.COLOR_RGB2GRAY)
                          for x in rgb])
         self.standardize(standardization_type)
-        return DataSet(gray, self.y)
+        return DataSet(gray, self.y, label_lookup=self.label_lookup)
 
     def one_of_class(self):
         y = self.classes
@@ -170,6 +170,15 @@ class DataSet(object):
         self.y = self.y[perm]
         return self
 
+    def show_all(self, class_):
+        idxs = np.nonzero(self.y == class_)[0]
+        fig, axes = plt.subplots(len(idxs), 1,
+                                subplot_kw=dict(xticks=[], yticks=[]))
+        nxmxc = self.to_nxmxc()
+        for i, ax in zip(idxs, axes):
+            ax.imshow(nxmxc.X[i].squeeze())
+        return self
+
     def show_sample(self):
         n_samples_per_class = min(4, pd.value_counts(self.y).max())
         classes = sorted(set(self.y))
@@ -178,6 +187,10 @@ class DataSet(object):
 
         fig, axes = plt.subplots(n_classes, n_samples_per_class,
                                 subplot_kw=dict(xticks=[], yticks=[]))
+        try:
+            axes[0][0]
+        except TypeError:
+            axes = np.array([axes])
 
         i = 0
         nxmxc = self.to_nxmxc()

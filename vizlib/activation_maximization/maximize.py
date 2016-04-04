@@ -126,7 +126,7 @@ def get_output_expressions(X, output_layer):
     expressions = [output_expr]
 
     for current_layer in layers:
-        output_expr = current_layer.get_output_for(output_expr)
+        output_expr = current_layer.get_output_for(output_expr, deterministic=True)
         expressions.append(output_expr)
 
     return expressions
