@@ -72,3 +72,5 @@ die/imgs/
 die/*.npy
 die/*.mat
 die/*.tgz
+
+*.pickle
