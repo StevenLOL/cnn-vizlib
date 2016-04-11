@@ -16,15 +16,6 @@ def build(ds, nepochs, lr, momentum, args):
     layers=[
         ('i', lasagne.layers.InputLayer),
     ]
-    params = {}
-    for i in range(1, ndense+1):
-        layers.append(('c{i}'.format(**locals()), Conv2DLayer))
-        layers.append(('p{i}'.format(**locals()), MaxPool2DLayer))
-        params['c{i}_num_filters'.format(**locals())] = 3
-        params['c{i}_filter_size'.format(**locals())] = (3, 3)
-        params['c{i}_pad'.format(**locals())] = 'same'
-        params['p{i}_pool_size'.format(**locals())] = (2, 2)
-
     layers.append(('o', lasagne.layers.DenseLayer))
 
     net = NeuralNet(
@@ -52,8 +43,6 @@ def build(ds, nepochs, lr, momentum, args):
         ],
         max_epochs=nepochs,
         verbose=1,
-
-        **params
     )
     return net
 
