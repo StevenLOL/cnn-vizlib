@@ -1,5 +1,7 @@
 import lasagne
 import theano
+import numpy as np
+
 
 def maximize_scores(
     output_layer,
@@ -61,6 +63,17 @@ def maximize_scores(
         for i in range(number_of_iterations):
             current_value = -float(update_iter())
             history.append(current_value)
+            if i % 100 == 0:
+                current_X = X.get_value(borrow=False)
+                # We can stop early. The score can be increased indefinately
+                # when we do not use a maxnorm. However, the image does not
+                # fundamentally change.
+                current_X_normalized = current_X / current_X.sum()
+                best_X_normalized = best_X / best_X.sum()
+                if np.abs(current_X_normalized - best_X_normalized).max() < 1e-6:
+                    print('Early stopping')
+                    break
+
             if current_value > best_value:
                 best_X = X.get_value(borrow=False)
                 best_value = current_value
