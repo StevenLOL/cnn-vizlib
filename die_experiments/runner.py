@@ -17,8 +17,6 @@ import vizlib
 import os
 import errno
 
-import numpy as np
-
 try:
     from lasagne.layers.cuda_convnet import Conv2DCCLayer as Conv2DLayer
     from lasagne.layers.cuda_convnet import MaxPool2DCCLayer as MaxPool2DLayer
@@ -67,12 +65,11 @@ if __name__ == '__main__':
     netfname = os.path.splitext(sys.argv[1])[0]
     netmodule = importlib.import_module(netfname)
     netname = netmodule.name(sys.argv[2:])
-    netname = 'testwojtek'
 
     ds = load_die_dataset()
     lr = (1e-4, 0.0001)
     momentum = (0.9, 0.999)
-    nepochs = 500
+    nepochs = 5000
 
     for i in range(5):
         net = netmodule.build(ds, nepochs, lr, momentum, sys.argv[2:])
