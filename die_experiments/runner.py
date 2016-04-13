@@ -17,6 +17,8 @@ import vizlib
 import os
 import errno
 
+import numpy as np
+
 try:
     from lasagne.layers.cuda_convnet import Conv2DCCLayer as Conv2DLayer
     from lasagne.layers.cuda_convnet import MaxPool2DCCLayer as MaxPool2DLayer
@@ -41,7 +43,7 @@ def load_die_dataset():
     X = np.load('../die/die.32.X.npy')[:, None, :, :].astype(np.float32)
     y = np.load('../die/die.y.npy').astype(np.int32) - 1
     ds = vizlib.data.DataSet(X, y).standardize('global')
-    return ds
+    return ds.shuffle()
 
 def plot_weights(weights):
     fig = pyplot.figure(figsize=(6, 6))
@@ -65,11 +67,12 @@ if __name__ == '__main__':
     netfname = os.path.splitext(sys.argv[1])[0]
     netmodule = importlib.import_module(netfname)
     netname = netmodule.name(sys.argv[2:])
+    netname = 'testwojtek'
 
     ds = load_die_dataset()
     lr = (1e-4, 0.0001)
     momentum = (0.9, 0.999)
-    nepochs = 3
+    nepochs = 500
 
     for i in range(5):
         net = netmodule.build(ds, nepochs, lr, momentum, sys.argv[2:])
