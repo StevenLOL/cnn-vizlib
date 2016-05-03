@@ -7,9 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import theano
 import lasagne
-from mpl_toolkits.axes_grid.inset_locator import inset_axes
 import matplotlib.gridspec as gridspec
-import math
 from itertools import izip
 
 
@@ -196,9 +194,6 @@ class ConvLayerPlotter(object):
     def init_func(self, xs, axes):
         self.axes = axes
         # Create subaxes for each channel to be plotted on
-        width = '{}%'.format(math.floor(100.0 / len(xs)))
-        height = width
-        width = 1.0 / len(xs)
         for ax, x in izip(axes,xs):
             ax.get_xaxis().set_visible(False)
             ax.get_yaxis().set_visible(False)
