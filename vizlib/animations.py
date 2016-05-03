@@ -79,7 +79,7 @@ def from_neural_network(neural_network, X, output_file, dpi=100, fps=30):
     nn_plotter = NeuralNetworkPlotter(shapes)
 
     def init_func():
-        nn_plotter.init_func([activations[0] for activations in activations_per_layer])
+        return nn_plotter.init_func([activations[0] for activations in activations_per_layer])
 
     def update(idx):
         idx = idx % len(X)
@@ -114,6 +114,7 @@ class NeuralNetworkPlotter(object):
         n_columns = max(p.n_required_axes for p in self.plotters)
         gs = gridspec.GridSpec(n_rows, n_columns)
 
+        artists = []
         for i, (p, x) in enumerate(izip(self.plotters, inputs)):
             axes = []
             if p.n_required_axes == 1:
@@ -126,13 +127,16 @@ class NeuralNetworkPlotter(object):
                 ax.spines['right'].set_visible(False)
                 ax.spines['left'].set_visible(False)
                 ax.spines['bottom'].set_visible(False)
-            p.init_func(x, axes)
+            artist = p.init_func(x, axes)
+            artists.extend(artist)
+
+        return artists
 
     def update(self, inputs):
         updated_artists = []
         for p, x in izip(self.plotters, inputs):
             updated_artist = p.update(x)
-            updated_artists.append(updated_artist)
+            updated_artists.extend(updated_artist)
         return updated_artists
 
     def create_plotter(self, input_shape, is_first, is_last):
@@ -165,6 +169,7 @@ class DenseLayerPlotter(object):
         self.artist = self.ax.imshow(self.transform(x), cmap=self.cmap, interpolation='none')
         self.ax.get_xaxis().set_visible(False)
         self.ax.get_yaxis().set_visible(False)
+        return [self.artist]
 
     def update(self, x):
         '''Returns the updated artists'''
@@ -199,6 +204,7 @@ class ConvLayerPlotter(object):
             ax.get_yaxis().set_visible(False)
             artist = ax.imshow(x, cmap='gray', interpolation='none')
             self.artists.append(artist)
+        return self.artists
 
     def update(self, xs):
         for artist, x in izip(self.artists, xs):
@@ -237,6 +243,7 @@ class PosteriorPlotter(object):
             self.text_artists.append(text_artist)
 
         ax.set_ylabel('posterior')
+        return [self.artist] + self.text_artists
 
     def update(self, x):
         for v, rect, text in izip(x, self.artist, self.text_artists):
