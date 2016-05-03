@@ -215,14 +215,14 @@ class PosteriorPlotter(object):
 
     def __init__(self, input_shape):
         self.ax = None
-        self.artist = None     # The container of the rectangles of the bars
+        self.artists = None     # The container of the rectangles of the bars
         self.text_artists = [] # The text showing on top of the bars
         self.width = 0.35
 
     def init_func(self, x, axes):
         ax = self.ax = axes[0]
         ind = np.arange(len(x))
-        rects = self.artist = ax.bar(ind, x, self.width)
+        rects = self.artists = list(ax.bar(ind, x, self.width))
 
         ax.set_ylim([0.0, 1.0 + 0.2])
         ax.set_yticks([0, 0.5, 1.0], minor=False)
@@ -243,14 +243,14 @@ class PosteriorPlotter(object):
             self.text_artists.append(text_artist)
 
         ax.set_ylabel('posterior')
-        return [self.artist] + self.text_artists
+        return self.artists + self.text_artists
 
     def update(self, x):
-        for v, rect, text in izip(x, self.artist, self.text_artists):
+        for v, rect, text in izip(x, self.artists, self.text_artists):
             rect.set_height(v)
             text.set_text('%.2f' % v)
             text.set_y(v * 1.05)
-        return [self.artist] + self.text_artists
+        return self.artists + self.text_artists
 
     @property
     def n_required_axes(self):
