@@ -70,7 +70,7 @@ def maximize_scores(
                 # fundamentally change.
                 current_X_normalized = current_X / current_X.sum()
                 best_X_normalized = best_X / best_X.sum()
-                if np.abs(current_X_normalized - best_X_normalized).max() < 1e-6:
+                if np.abs(current_X_normalized - best_X_normalized).max() < 1e-4:
                     print('Early stopping')
                     break
 
