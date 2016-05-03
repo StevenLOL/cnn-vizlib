@@ -69,6 +69,8 @@ vizlib/data/die16.p
 vizlib/data/die32.p
 vizlib/data/die64.p
 die/imgs/
+die/gifs/
+die/mp4s/
 die/*.npy
 die/*.mat
 die/*.tgz
