@@ -107,6 +107,22 @@ I could now install `opencv` locally:
 
     conda install opencv
 
+# Das
+
+The problem with the das is that root nodes do not have access to a GPU.
+For this reason we need to run the notebook on a child node, but we can only
+connect to this node through the root node. So we need to chain port forwarding,
+and configure jupyter notebook. Here are the commands that I ran:
+
+    local$ 	ssh -L 8889:localhost:9999 dasvu ssh -L 9999:localhost:9999 -N node009
+    dasvu$ 	jupyter notebook --generate-config
+                vim ~/.jupyter/jupyter_notebook_config.py
+                # enter same configuration as above
+                ssh node009
+    node009$    jupyter notebook
+
+Connect with local browser to `localhost:8889`
+
 # Methods
 
 - activation maximization
