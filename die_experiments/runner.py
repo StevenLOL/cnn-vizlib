@@ -65,11 +65,12 @@ if __name__ == '__main__':
     netfname = os.path.splitext(sys.argv[1])[0]
     netmodule = importlib.import_module(netfname)
     netname = netmodule.name(sys.argv[2:])
+    print('saving to', netname)
 
     ds = load_die_dataset()
     lr = (1e-4, 0.0001)
     momentum = (0.9, 0.999)
-    nepochs = 5000
+    nepochs = 10000
 
     for i in range(5):
         net = netmodule.build(ds, nepochs, lr, momentum, sys.argv[2:])

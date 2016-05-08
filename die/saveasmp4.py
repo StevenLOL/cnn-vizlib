@@ -73,9 +73,38 @@ nn = load_nn(network_folder)
 ds = load_dataset()
 mask = load_mask()
 
+if network_folder.endswith('/'):
+    network_folder = network_folder[:-1]
+mp4_dir = os.path.join(mp4_dir, os.path.split(network_folder)[1])
+if not os.path.exists(mp4_dir):
+    os.makedirs(mp4_dir)
+print('Saving to', mp4_dir)
+
 width = len(str(mask.max()))
 for m in range(mask.max() + 1):
     X = ds.X[mask == m]
     y = ds.y[mask == m][0]
+
+    # I noticed that the animation is very non-smooth,
+    # since the animation tends to jump whenever the second axis is rotated.
+    # the second axis contains 41 degrees always I think.
+    # so we need to reverse every other 41 images.
+    reverse = False
+    i = 0
+    ranges = []
+    while i < len(X):
+        i_start = i
+        i_end = i_start + 41
+        r = np.arange(i_start, i_end)
+        if reverse:
+            r = r[::-1]
+        reverse = not reverse
+        ranges.extend(r)
+        i = i_end
+    X = X[ranges]
+
     output_file = os.path.join(mp4_dir, '{:0>{width}}_{}.mp4'.format(m, y, width=width))
-    vizlib.animations.from_neural_network(nn, X, output_file)
+    ani = vizlib.animations.from_neural_network(nn, X)
+    ani.save(output_file, fps=30, extra_args=['-vcodec', 'libx264'])
+
+    print("DONE WITH", '{:0>{width}}_{}.mp4'.format(m, y, width=width))

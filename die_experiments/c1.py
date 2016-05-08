@@ -10,6 +10,8 @@ def parse_args(args):
     nconvs = int(args[0])
     return nconvs
 
+initial_filter_size = 9
+
 def build(ds, nepochs, lr, momentum, args):
     nconvs = parse_args(args)
 
@@ -17,7 +19,13 @@ def build(ds, nepochs, lr, momentum, args):
         ('i', lasagne.layers.InputLayer),
     ]
     params = {}
-    for i in range(1, nconvs+1):
+    layers.append(('c1', Conv2DLayer))
+    layers.append(('p1', MaxPool2DLayer))
+    params['c1_num_filters'] = 3
+    params['c1_filter_size'] = (initial_filter_size, initial_filter_size)
+    params['c1_pad'] = 'same'
+    params['p1_pool_size'] = (2, 2)
+    for i in range(2, nconvs+1):
         layers.append(('c{i}'.format(**locals()), Conv2DLayer))
         layers.append(('p{i}'.format(**locals()), MaxPool2DLayer))
         params['c{i}_num_filters'.format(**locals())] = 3
@@ -52,4 +60,4 @@ def build(ds, nepochs, lr, momentum, args):
 
 def name(args):
     nconvs = parse_args(args)
-    return 'c{nconvs}'.format(**locals())
+    return '{initial_filter_size}c{nconvs}'.format(initial_filter_size=initial_filter_size, nconvs=nconvs)

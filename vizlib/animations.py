@@ -10,7 +10,6 @@ import lasagne
 import matplotlib.gridspec as gridspec
 from itertools import izip
 
-
 def from_numpy_arrays(numpy_arrays, output_file, dpi=100, fps=30):
     f, ax = plt.subplots(1)
     ax.get_xaxis().set_visible(False)
@@ -62,7 +61,7 @@ def align_horizontally(X):
     joined.pop() # remove the last erronous padding
     return np.hstack(joined)
 
-def from_neural_network(neural_network, X, output_file, dpi=100, fps=30):
+def from_neural_network(neural_network, X):
     layers = neural_network.get_all_layers()
     input_layer = layers.pop(0)
     f = theano.function(
@@ -96,9 +95,9 @@ def from_neural_network(neural_network, X, output_file, dpi=100, fps=30):
         init_func=init_func,
         blit=True
     )
-    writer = animation.writers['ffmpeg'](fps=fps)
-    ani.save(output_file, writer=writer, dpi=dpi)
-
+    # For whatever reason the figure needs to be closed...
+    # Otherwise the animation will not always play.
+    plt.close()
     return ani
 
 class NeuralNetworkPlotter(object):
@@ -159,22 +158,22 @@ class DenseLayerPlotter(object):
     def __init__(self, input_shape):
         self.cmap = 'gray'
         self.ax = None
-        self.artist = None
+        self.artists = []
 
     def transform(self, x):
         return x[None, :] # Broadcast to (y, 1) from (y, )
 
     def init_func(self, x, axes):
         self.ax = axes[0]
-        self.artist = self.ax.imshow(self.transform(x), cmap=self.cmap, interpolation='none')
+        self.artists.append(self.ax.imshow(self.transform(x), cmap=self.cmap, interpolation='none'))
         self.ax.get_xaxis().set_visible(False)
         self.ax.get_yaxis().set_visible(False)
-        return [self.artist]
+        return self.artists
 
     def update(self, x):
         '''Returns the updated artists'''
-        self.artist.set_data(self.transform(x))
-        return [self.artist]
+        self.artists[0].set_data(self.transform(x))
+        return self.artists
 
     @property
     def n_required_axes(self):
@@ -184,7 +183,6 @@ class InputLayerPlotter(DenseLayerPlotter):
 
     def __init__(self, input_shape):
         super(InputLayerPlotter, self).__init__(input_shape)
-        self.cmap = None # Let matplotlib figure this one out.
 
     def transform(self, x):
         return np.rollaxis(x, 0, 3).squeeze()
