@@ -27,7 +27,7 @@ def taylor_expansion_functions(output_layer, ignore_nonlinearity=True):
     scores = vizlib.activation_maximization.scores(
         X, output_layer, ignore_nonlinearity=ignore_nonlinearity)
     return [
-        theano.function([X], theano.grad(score, wrt=X).max(axis=1)[0])
+        theano.function([X], theano.grad(score, wrt=X).max(axis=1))
         for score in scores
     ]
 
