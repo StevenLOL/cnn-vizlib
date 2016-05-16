@@ -1,6 +1,7 @@
 import lasagne
 import theano
 import numpy as np
+import vizlib
 
 
 def maximize_scores(
@@ -95,7 +96,7 @@ def scores(X, output_layer, ignore_nonlinearity=True):
     return output
 
 def get_output_expression(X, output_layer):
-    output_expr = get_output_expressions(X, output_layer)[-1]
+    output_expr = vizlib.utils.get_output_expressions(X, output_layer)[-1]
     # This output is always of the form (n_batch, ...)
     # Since optimizing for a batch larger than 1 is hard to define,
     # we won't do that here. And simply return the first element in the batch.
@@ -114,32 +115,3 @@ def get_output_expression_conv_layer(output_expr):
     # since we can not maximize multiple outputs at the same time,
     # let's just sum the output over the right axis.
     return output_expr.sum(axis=(-2, -1))
-
-def get_output_expressions(X, output_layer):
-    '''Return a list of the output expressions wrt the input variable X
-    for all layers that precide the output_layer and the output_layer itself.
-
-    i.e., if output_layer has 9 layers before it,
-    then this will return a list x with len(x) == 10,
-    where x[-1] is the output expression of the output_layer
-    '''
-
-    # We assume layers have a single input and a single output,
-    # so building the computation graph is as simple as traversing
-    # to the input, and then traversing back up.
-    first_layer = output_layer
-    layers = [output_layer]
-    while not hasattr(first_layer, 'input_var'):
-        first_layer = first_layer.input_layer
-        layers.append(first_layer)
-    # the pop removes the first_layer
-    layers.pop()
-    output_expr = X
-    layers.reverse()
-    expressions = [output_expr]
-
-    for current_layer in layers:
-        output_expr = current_layer.get_output_for(output_expr, deterministic=True)
-        expressions.append(output_expr)
-
-    return expressions

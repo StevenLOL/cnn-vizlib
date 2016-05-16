@@ -2,6 +2,8 @@
 # encoding: utf-8
 '''
 '''
+import matplotlib
+matplotlib.use('agg')
 import vizlib
 import tempfile
 import numpy as np
@@ -76,7 +78,8 @@ def test_from_neural_network():
             ('hidden4', lasagne.layers.DenseLayer),
             ('output', lasagne.layers.DenseLayer),
         ],
-        input_shape=(None, 1, 32, 32),
+        input_shape=(None, 3, 32, 32),
+        # input_shape=(None, 1, 32, 32),
         conv1_num_filters=3, conv1_filter_size=(5, 5), conv1_pad='same',
         pool1_pool_size=(2, 2),
         conv2_num_filters=2, conv2_filter_size=(3, 3), conv2_pad='same',
@@ -106,11 +109,11 @@ def test_from_neural_network():
         white,
         black,
     ])
-    X_gray = np.array([cv2.cvtColor(x, cv2.COLOR_RGB2GRAY) for x in X])
     # nn expects batch x chan x width x height
-    X_gray = X_gray.reshape(X_gray.shape[:1] + (1, ) + X_gray.shape[1:])
+    X = np.rollaxis(X, 3, 1)
 
     # Again, no assertion. Need to manually inspect the result.
     _, fname = tempfile.mkstemp(suffix='.mp4')
-    vizlib.animations.from_neural_network(nn, X_gray, fname, fps=0.5)
+    ani = vizlib.animations.from_neural_network(nn, X)
+    ani.save(fname, fps=0.5, extra_args=['-vcodec', 'libx264'])
     subprocess.call(['gnome-open', fname])

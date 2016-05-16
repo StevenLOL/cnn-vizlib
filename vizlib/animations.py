@@ -9,6 +9,7 @@ import theano
 import lasagne
 import matplotlib.gridspec as gridspec
 from itertools import izip
+import vizlib
 
 def from_numpy_arrays(numpy_arrays, output_file, dpi=100, fps=30):
     f, ax = plt.subplots(1)
@@ -73,40 +74,52 @@ def from_neural_network(neural_network, X):
     # XXX: assumed all activations fit in memory. This might not be true
     # for larger networks, while we still want to have a single animation.
 
-    f = plt.figure()
-    shapes = [activations.shape[1:] for activations in activations_per_layer]
-    nn_plotter = NeuralNetworkPlotter(shapes)
+    saliency_functions_per_class = vizlib.class_saliency_map.taylor_expansion_functions(layers[-1])
+    saliency_maps = np.array([f(X) for f in saliency_functions_per_class])
+    # noutput x nbatch x width x height => nbatch x noutput x width x height
+    saliency_maps_per_map_type = [np.rollaxis(saliency_maps, 0, 2)]
+
+    occlusion_maps = vizlib.class_saliency_map.occlusion(X, layers[-1])
+    saliency_maps_per_map_type.append(occlusion_maps)
+
+    figure = plt.figure()
+    input_shapes = [activations.shape[1:] for activations in activations_per_layer]
+    saliency_shapes = [map.shape[1:] for map in saliency_maps_per_map_type]
+    nn_plotter = NeuralNetworkPlotter(figure, input_shapes, saliency_shapes)
+
+    activations_and_saliencies = activations_per_layer + saliency_maps_per_map_type
 
     def init_func():
-        return nn_plotter.init_func([activations[0] for activations in activations_per_layer])
+        return nn_plotter.init_func([x[0] for x in activations_and_saliencies])
 
     def update(idx):
         idx = idx % len(X)
-        return nn_plotter.update([activations[idx] for activations in activations_per_layer])
+        return nn_plotter.update([x[idx] for x in activations_and_saliencies])
 
     # When too little frames are provided, the animation cuts short.
     # I rather have a cyclical animation, than missing part of the animation...
     # So that is what this does.
     n_frames = max(len(X), 30)
     ani = animation.FuncAnimation(
-        f,
+        nn_plotter.figure,
         update,
         n_frames,
         init_func=init_func,
         blit=True
     )
-    # For whatever reason the figure needs to be closed...
-    # Otherwise the animation will not always play.
-    plt.close()
     return ani
 
 class NeuralNetworkPlotter(object):
 
-    def __init__(self, input_shapes):
+    def __init__(self, figure, input_shapes, saliency_shapes):
         self.plotters = []
         for idx, input_shape in enumerate(input_shapes):
-            plotter = self.create_plotter(input_shape, idx == 0, idx + 1 == len(input_shapes))
+            plotter = self.create_input_plotter(input_shape, idx == 0, idx + 1 == len(input_shapes))
             self.plotters.append(plotter)
+        for saliency_shape in saliency_shapes:
+            plotter = self.create_saliency_plotter(saliency_shape)
+            self.plotters.append(plotter)
+        self.figure = figure
 
     def init_func(self, inputs):
         n_rows = len(self.plotters)
@@ -129,6 +142,8 @@ class NeuralNetworkPlotter(object):
             artist = p.init_func(x, axes)
             artists.extend(artist)
 
+        gs.tight_layout(self.figure)
+
         return artists
 
     def update(self, inputs):
@@ -138,7 +153,15 @@ class NeuralNetworkPlotter(object):
             updated_artists.extend(updated_artist)
         return updated_artists
 
-    def create_plotter(self, input_shape, is_first, is_last):
+    def create_saliency_plotter(self, input_shape):
+        sl = len(input_shape)
+
+        if sl == 3:
+            return SaliencyPlotter(input_shape)
+
+        raise ValueError('Unsupported input shape {}'.format(input_shape))
+
+    def create_input_plotter(self, input_shape, is_first, is_last):
         sl = len(input_shape)
 
         if sl == 3 and is_first:
@@ -208,6 +231,11 @@ class ConvLayerPlotter(object):
         for artist, x in izip(self.artists, xs):
             artist.set_data(x)
         return self.artists
+
+class SaliencyPlotter(ConvLayerPlotter):
+
+    def __init__(self, input_shape):
+        super(SaliencyPlotter, self).__init__(input_shape)
 
 class PosteriorPlotter(object):
 

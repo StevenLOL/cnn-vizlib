@@ -23,6 +23,47 @@ def get_input_vars(output_layer):
             return sum((get_input_vars(l) for l in layer.input_layers), [])
     return [layer.input_var]
 
+def get_output_expressions(X, output_layer):
+    '''Return a list of the output expressions wrt the input variable X
+    for all layers that precide the output_layer and the output_layer itself.
+
+    i.e., if output_layer has 9 layers before it,
+    then this will return a list x with len(x) == 10,
+    where x[-1] is the output expression of the output_layer
+    '''
+
+    # We assume layers have a single input and a single output,
+    # so building the computation graph is as simple as traversing
+    # to the input, and then traversing back up.
+    first_layer = output_layer
+    layers = [output_layer]
+    while not hasattr(first_layer, 'input_var'):
+        first_layer = first_layer.input_layer
+        layers.append(first_layer)
+    # the pop removes the first_layer
+    layers.pop()
+    output_expr = X
+    layers.reverse()
+    expressions = [output_expr]
+
+    for current_layer in layers:
+        output_expr = current_layer.get_output_for(output_expr, deterministic=True)
+        expressions.append(output_expr)
+
+    return expressions
+
+def get_output(output_layer, input, ignore_nonlinearity=False):
+    if ignore_nonlinearity:
+        original_nonlinearity = output_layer.nonlinearity
+    output_layer.nonlinearity = lasagne.nonlinearities.identity
+
+    output = get_output_expressions(input, output_layer)[-1]
+
+    if ignore_nonlinearity:
+        output_layer.nonlinearity = original_nonlinearity
+
+    return output
+
 class GpuNeuralNet(nolearn.lasagne.NeuralNet):
     '''Like nolearn.lasagne.NeuralNet but then on GPU.
 
@@ -182,3 +223,4 @@ class GpuNeuralNet(nolearn.lasagne.NeuralNet):
         )
 
         return train_iter, eval_iter, predict_iter
+
