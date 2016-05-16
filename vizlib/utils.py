@@ -14,6 +14,15 @@ def get_input_var(output_layer):
         layer = layer.input_layer
     return layer.input_var
 
+def get_input_vars(output_layer):
+    layer = output_layer
+    while not hasattr(layer, 'input_var'):
+        if hasattr(layer, 'input_layer'):
+            layer = layer.input_layer
+        elif hasattr(layer, 'input_layers'):
+            return sum((get_input_vars(l) for l in layer.input_layers), [])
+    return [layer.input_var]
+
 class GpuNeuralNet(nolearn.lasagne.NeuralNet):
     '''Like nolearn.lasagne.NeuralNet but then on GPU.
 
