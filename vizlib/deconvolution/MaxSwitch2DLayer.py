@@ -30,7 +30,13 @@ import lasagne.layers
 from theano import gof, Op, tensor
 import theano
 
-class MaxSwitch2DLayer(lasagne.layers.Pool2DLayer):
+# Renamed between versions
+try:
+    Pool2DLayer = lasagne.layers.Poold2DLayer
+except AttributeError:
+    Pool2DLayer = lasagne.layers.MaxPool2DLayer
+
+class MaxSwitch2DLayer(Pool2DLayer):
 
     def __init__(self, incoming, pool_size, stride=None, pad=(0, 0),
                  ignore_border=True, **kwargs):
@@ -183,17 +189,6 @@ class DownsampleFactorMaxSwitches(Op):
         shp = self.out_shape(in_shapes[0], self.ds,
                              self.ignore_border, self.st, self.padding)
         return [shp]
-
-    # FIXME: UNSURE IF THIS IS NEEDED. THE GRAD SHOULD BE IRRELEVANT.
-    # def grad(self, inp, grads):
-    #     x, = inp
-    #     gz, = grads
-    #     maxout = self(x)
-    #     return [DownsampleFactorMaxGrad(self.ds,
-    #                                     ignore_border=self.ignore_border,
-    #                                     st=self.st, padding=self.padding,
-    #                                     mode=self.mode)(
-    #                                         x, maxout, gz)]
 
     def c_headers(self):
         return ['<algorithm>']

@@ -1,2 +1,2 @@
-from taylor_expansion import taylor_expansion_functions, taylor_expansion
-from occlusion import occlusion
+from taylor_expansion import *
+from occlusion import *

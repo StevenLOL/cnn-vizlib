@@ -22,13 +22,11 @@ jupyter==1.0.0
 jupyter-client==4.2.2
 jupyter-console==4.1.1
 jupyter-core==4.1.0
-Lasagne==0.2.dev1
 MarkupSafe==0.23
 matplotlib==1.5.1
 mistune==0.7.2
 nbconvert==4.2.0
 nbformat==4.0.1
-nolearn==0.6a0.dev0
 notebook==4.1.0
 numpy==1.10.4
 pandas==0.18.0
@@ -54,10 +52,8 @@ six==1.10.0
 stevedore==1.12.0
 tabulate==0.7.5
 terminado==0.6
-Theano==0.8.0rc1
 tornado==4.3
 traitlets==4.2.1
 virtualenv==15.0.0
 virtualenv-clone==0.2.6
 virtualenvwrapper==4.7.1
--e git+git@github.com:jkalmeij/cnn-vizlib.git@73af59189e726259313f7ff46f112611e98d7381#egg=vizlib

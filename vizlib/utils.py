@@ -6,13 +6,40 @@ import theano
 import theano.tensor as T
 import numpy as np
 from time import time
+from collections import OrderedDict
 
+class IgnoreNonlinearity():
+    def __init__(self, layer, ignore_nonlinearity):
+        self.layer = layer
+        self.nonlinearity = None
+        self.ignore_nonlinearity = ignore_nonlinearity
+
+    def __enter__(self):
+        if self.ignore_nonlinearity:
+            self.nonlinearity = self.layer.nonlinearity
+            self.layer.nonlinearity = lasagne.nonlinearities.identity
+
+    def __exit__(self, type, value, traceback):
+        if self.ignore_nonlinearity:
+            self.layer.nonlinearity = self.nonlinearity
 
 def get_input_var(output_layer):
     layer = output_layer
     while not hasattr(layer, 'input_var'):
         layer = layer.input_layer
     return layer.input_var
+
+def get_input_vars_dict(output_layer):
+    result = OrderedDict()
+    layer = output_layer
+    while not hasattr(layer, 'input_var'):
+        if hasattr(layer, 'input_layer'):
+            layer = layer.input_layer
+        elif hasattr(layer, 'input_layers'):
+            for l in layer.input_layers:
+                result.update(get_input_vars_dict(l))
+            return result
+    return OrderedDict([(layer, layer.input_var)])
 
 def get_input_vars(output_layer):
     layer = output_layer
@@ -22,6 +49,13 @@ def get_input_vars(output_layer):
         elif hasattr(layer, 'input_layers'):
             return sum((get_input_vars(l) for l in layer.input_layers), [])
     return [layer.input_var]
+
+def get_input_layers(output_layer):
+    return [
+        l
+        for l in lasagne.layers.get_all_layers(output_layer)
+        if isinstance(l, lasagne.layers.InputLayer)
+    ]
 
 def get_output_expressions(X, output_layer):
     '''Return a list of the output expressions wrt the input variable X
@@ -224,3 +258,60 @@ class GpuNeuralNet(nolearn.lasagne.NeuralNet):
 
         return train_iter, eval_iter, predict_iter
 
+
+def export_taylor_features(xs, feature_functions, fname):
+    '''
+    '''
+    def filter_batch(arr):
+        temp = []
+        for i in xrange(arr.shape[1]):
+            temp.append(arr[i, i, :, :, :])
+        return np.array(temp)
+
+    max_maps = []
+    sum_maps = []
+    for pl in feature_functions:
+        max_maps.append([])
+        sum_maps.append([])
+        for f in pl:
+            max_maps[-1].append([])
+            sum_maps[-1].append([])
+            for x in xs:
+                max_output, sum_output = f(x[0])
+                max_output = filter_batch(max_output)
+                sum_output = filter_batch(sum_output)
+                max_maps[-1][-1].append(max_output.max(axis=1))
+                sum_maps[-1][-1].append(sum_output.max(axis=1)) # max here is not an error -- sum refers to the gradient
+        max_maps[-1] = np.array(max_maps[-1])
+        sum_maps[-1] = np.array(sum_maps[-1])
+    # max_maps are jagged length --- not an equal number of features for each layer
+    # so keep first dimension a list, rest numpy arrays
+    np.savez(fname.format('max'), *max_maps)
+    np.savez(fname.format('sum'), *sum_maps)
+
+    return max_maps, sum_maps
+
+def export_output_features(xs, output_functions, fname):
+    maps_img_x_batch = []
+    for x in xs:
+        maps_img = []
+        for f in output_functions:
+            map = f(*x)
+            maps_img.append(map)
+        maps_img_x_batch.append(maps_img)
+
+    maps_arr = np.array(maps_img_x_batch)
+
+    # image x batch x output x batch x c x 0 x 1
+    # reason for 2x batch:
+    # output of first eye is also dependent on second eye and vice versa
+    # can simply ignore the last batch dimension and take the i-th slice,
+    # where i is the index into the first batch dimension.
+    maps_arr = maps_arr.max(axis=-3)
+    temp = []
+    for i in xrange(maps_arr.shape[1]):
+        temp.append(maps_arr[:, i, :, i, :, :])
+    maps_arr = np.array(temp)
+
+    np.save(fname, maps_arr)
+    return maps_arr
