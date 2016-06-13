@@ -315,3 +315,33 @@ def export_output_features(xs, output_functions, fname):
 
     np.save(fname, maps_arr)
     return maps_arr
+
+def receptive_field_size(layers):
+    if len(layers) == 0:
+        return 0
+    layers = list(reversed(layers))
+    fs = layers[0][0]
+    for ks, stride in layers[1:]:
+        fs = (fs - 1) * stride + ks
+    return fs
+
+def receptive_field_size_for_layer(layer):
+    layers = lasagne.layers.get_all_layers(layer)
+    return receptive_field_size(
+        [(kernel_size(l), stride(l)) for l in layers if is_pool_or_conv_layer(l)]
+    )
+
+def stride(l):
+    assert l.stride[0] == l.stride[1], 'not implemented'
+    return l.stride[0]
+
+def kernel_size(l):
+    try:
+        ks = l.filter_size
+    except:
+        ks = l.pool_size
+    assert ks[0] == ks[1], 'not implemented'
+    return ks[0]
+
+def is_pool_or_conv_layer(l):
+    return hasattr(l, 'filter_size') or hasattr(l, 'pool_size')

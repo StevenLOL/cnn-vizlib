@@ -40,6 +40,9 @@ def taylor_expansion_output_layer(output_layer, ignore_nonlinearity=False):
     '''
     output_shape = output_layer.output_shape
     n_batch = output_shape[0]
+    if n_batch is None:
+        print('Expecting batch size to be fixed, assuming 1')
+        n_batch = 1
 
     X_vars_dict = vizlib.utils.get_input_vars_dict(output_layer)
     X_vars = X_vars_dict.values()

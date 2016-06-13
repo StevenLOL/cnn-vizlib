@@ -73,6 +73,9 @@ def occlusion_iter(xs, batch_slice=None, stride=1, square_length=7, pad_value=0.
     if stride > square_length:
         raise ValueError("Stride should be LEQ to the square_length")
 
+    if xs.shape[2] != xs.shape[3] and xs.shape[1] == 3:
+        raise ValueError("Looks like data is shaped (b, x, y, c). Expecting (b, c, x, y) instead.")
+
     return OcclusionBatchIterator(xs, batch_slice, stride, square_length, pad_value)
 
 def occlusion(iter_batch_or_xs, predict_proba, **kwargs):
