@@ -1,8 +1,42 @@
-# cnn-vizlib
+# CNN-VIZLIB
 
-Implement multiple convolution network visualization methods on top of [theano](https://github.com/Theano/Theano) and [lasagne](https://github.com/Lasagne/Lasagne).
+Library to visualize features learned by Convolutional Neural Networks. Built on
+top of [theano](https://github.com/Theano/Theano) and [lasagne](https://github.com/Lasagne/Lasagne).
 
-# Installation
+# Install
+
+    $ pip install -r requirements.txt
+    $ pip install -e .
+
+OpenCV can not be installed through pip. 
+
+# Methods
+
+Activation Maximization (`activation_maximization/`)
+: Visualize a filter by finding the input that maximizes its activation.
+
+Deconvolutional Networks (`deconvolution/`)
+: Visualize a filter with respect to a certain input image by projecting the
+filter's activation on a given image back to input space.
+
+Gradient Based Method (`class_saliency_map/`)
+: Assign saliency scores to individual pixels with respect to a certain filter
+by assuming the activation can be approximated as a simple linear function.
+
+Occlusion Method (`class_saliency_map/`)
+: Assign saliency scores to individual pixels with respect to a certain filter
+by occluding a region centered on an individual pixel and observing the effect
+on the networks output.
+
+# Examples
+
+TODO
+
+## Virtual Environments
+
+Virtual environments are great when working on a machine that is not owned by
+you. The following steps show how to setup a virtual environment on a machine on
+which you do not have root access. All files are installed to `$HOME/local`.
 
 Using [virtualenv](http://docs.python-guide.org/en/latest/dev/virtualenvs/):
 
@@ -42,20 +76,23 @@ To install [opencv](http://opencv.org/downloads.html):
     $ ln -s $HOME/.local/lib/python2.7/site-packages/cv2.so \
         $HOME/.virtualenvs/venv/lib/python2.7/site-packages/cv2.so
 
-Verify that everything is correct:
+# Working Remotely
 
-    $ cd cnn-vizlib
-    $ py.test
+A great method for working interactively on headless servers is the IPython
+notebook (today called Jupyter notebook). The following shows how to setup the
+notebook on the remote side, and how to connect to them locally using SSH
+tunnels.
 
-# Notebooks
+## Simple Setup
 
-All liacs servers that have GPU are not accessible from outside networks.
-However, we can run a notebook server on them and access it through ssh
-tunneling.
+A simple setup, with a single remote machine and a single local machine.
+
+This assumes you are using the old iPython notebook. See below for a Jupyter
+notebook example.
 
     remote$    ipython profile create notebookserver
     # will generate a notebook config file
-    remote$    vim ~/.ipython/profile_notebookserver/ipython_notebook_config.py
+    remote$     vim ~/.ipython/profile_notebookserver/ipython_notebook_config.py
 
     # insert following lines
     c = get_config()
@@ -74,62 +111,28 @@ Now point your browser to the following url:
 
     http://localhost:8889
 
-You can also use `https` and passwords, but I did not bother as the information
-is not private.
+If the information you are viewing is private, consider using https and
+passwords.
 
-# Romulus
+## Proxy Setup
 
-    local$      ssh -L 8080:localhost:9999 romulus
-    romulus$    jupyter notebook
+This setup looks as follows:
 
-Romulus is now available via a notebook at `localhost:8080` on your local
-machine.
+    local
+    head [remote node that is accessible from local, but not for computing]
+    compute [compute node that is only accessible from the head node]
 
-Romulus is running:
-- `CentOS release 6.7 (Final)` as echoed by `cat /etc/redhat-release`.
+We create a tunnel such that localhost:8889 arrives at compute:9999, through
+head:9998:
 
-Also installed is the `anaconda` package which is a collection of useful python
-packages. The package manager that comes with anaconda is `conda`. There seem to
-be no conflicts between `conda` and `pip` installations.
-
-This `conda` installation is installed in directory where the `wojtek` account
-cannot write, so instead it should be cloned locally. I used the following
-command:
-
-    conda create -n conda --clone=/zfsdata/conda/conda
-
-This created a new environment at `/home/wojtek/.conda/envs/conda` which can be
-activated using:
-
-    source activate conda
-
-I could now install `opencv` locally:
-
-    conda install opencv
-
-# Das
-
-The problem with the das is that root nodes do not have access to a GPU.
-For this reason we need to run the notebook on a child node, but we can only
-connect to this node through the root node. So we need to chain port forwarding,
-and configure jupyter notebook. Here are the commands that I ran:
-
-    local$ 	ssh -L 8889:localhost:9999 dasvu ssh -L 9999:localhost:9999 -N node009
-    dasvu$ 	jupyter notebook --generate-config
+    local$ 	ssh -L 8889:localhost:9998 head ssh -L 9998:localhost:9999 -N compute
+    head$ 	jupyter notebook --generate-config
                 vim ~/.jupyter/jupyter_notebook_config.py
                 # enter same configuration as above
-                ssh node009
-    node009$    jupyter notebook
+                ssh compute
+    compute$    jupyter notebook
 
 Connect with local browser to `localhost:8889`
-
-# Methods
-
-- activation maximization
-- saliency maps
-    - occlusion based
-    - gradient based
-- deconvolution network
 
 # Data
 
@@ -152,50 +155,3 @@ in the repository for convenience.
 
 If at some point you need to change the resolution, you should edit the
 `die.blend` file in the `die` folder.
-
-# What needs to be done
-
-Networks need to be trained. Each network is trained by:
-
-- Loading the dataset
-- Setting up a network
-- Training the network
-
-There might be multiple networks to consider. In this case it is already
-beneficial to move to Romulus for speedups.
-
-In addition to training the network, the network need to be inspected. The
-Deconvolutional method can not be applied to every type of network.
-
-Network inspection should be separated from network training so the trained
-models should be serialized. Lasagne networks are easily serialized. The topmost
-layer holds a reference to the layers below and so on. This means the structure
-can easily be serialized using pickle:
-
-    with open('mypickle.pickle, 'wb') as fh:
-        pickle.dump(topmost_layer, fh, -1)
-    topmost_layer_loaded = pickle.load(open('mypickle.pickle', 'rb'))
-
-I had less success serializing a `nolearn.lasagne.NeuralNet` since you might
-define progress functions during training and such, which then need to be
-available during load time. This leads to complications when reusing a network
-across different scripts, since the local helper functions won't be available.
-
-# Restrictions of Deconvolutional network
-
-- The output shape of the Convolutional layer should be the same as the input shape.
-  This requires a special padding setting called `pad='same`'. For a filter of size
-  `F = 2n + 1` (where `F` necessarily is uneven, since `n` is an integer), an
-  output of size `(N-F+1)x(M-F+1)` is produced when no padding is used.
-  Zero-padding both sides of the output with `n` zeros leads to `NxM` output.
-- The only supported nonlinearity is `Rectify`.
-- The only supported form of pooling is MaxPooling in two dimensions, and this
-  should be done using pooling with a `stride` equal to the `pool_size`, and a
-  `pool_size` that is a factor of the input size of said `MaxPool2D` layer.
-
-These restrictions are easy to adhere to if you ensur the following (as is
-common in the literature):
-
-- An input image size that is even
-- Uneven filters
-- `2x2` maxpooling
